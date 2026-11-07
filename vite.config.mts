@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,7 +28,7 @@ export default defineConfig(({ mode }) => {
   const previewPort = Number(rawEnv.PORT ?? process.env.PORT ?? 4173);
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     envPrefix: [],
     resolve: {
       alias: {

@@ -19,11 +19,11 @@ const ThemeModeContext = createContext<ThemeModeContextValue | undefined>(undefi
 
 const readStoredPreference = (): ThemePreference => {
   if (typeof window === 'undefined') {
-    return 'system';
+    return 'dark';
   }
 
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === 'dark' || stored === 'light' || stored === 'system' ? stored : 'system';
+  return stored === 'dark' || stored === 'light' || stored === 'system' ? stored : 'dark';
 };
 
 const ThemeModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {

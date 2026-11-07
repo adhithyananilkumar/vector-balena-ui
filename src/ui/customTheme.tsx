@@ -1,4 +1,5 @@
 import React from 'react';
+import ListEmpty from '../vector/components/list-empty';
 import {
   LinearProgress,
   PaletteMode,
@@ -20,21 +21,21 @@ const buttonBase = {
   styleOverrides: {
     root: {
       textTransform: 'none',
-      fontWeight: 'bold',
-      borderRadius: 5,
-      transition: 'none',
+      fontWeight: 500,
+      borderRadius: 0,
+      transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
       lineHeight: '1',
       paddingTop: '0',
       paddingBottom: 0,
     },
     sizeLarge: {
-      fontSize: 17,
-      letterSpacing: -0.5,
-      height: 48,
+      fontSize: 14,
+      letterSpacing: 0,
+      height: 40,
     },
     sizeMedium: {
-      fontSize: 14,
-      height: 35,
+      fontSize: 13,
+      height: 34,
     },
     sizeSmall: {
       fontSize: 12,
@@ -44,7 +45,7 @@ const buttonBase = {
       '>svg': {
         position: 'relative',
         top: -0.5,
-        fontSize: '24px !important',
+        fontSize: '18px !important',
       },
     },
     iconSizeMedium: {
@@ -54,7 +55,7 @@ const buttonBase = {
       '>svg': {
         position: 'relative',
         top: 0.5,
-        fontSize: '22px !important',
+        fontSize: '18px !important',
       },
     },
     iconSizeSmall: {
@@ -72,7 +73,7 @@ const buttonBase = {
 
 const baseTypography: ThemeOptions['typography'] = {
   fontFamily:
-    "NeueHansKendrick, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif",
+    "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif",
 } as const;
 
 const monoTypography = {
@@ -83,22 +84,22 @@ const monoTypography = {
 const createLightPalette = (): PaletteOptions => ({
   mode: 'light',
   primary: {
-    main: '#2a506f',
-    light: '#4c7190',
+    main: '#0e7490',
+    light: '#22a6c4',
     contrastText: '#ffffff',
   },
   secondary: {
-    main: '#1496e1',
-    light: '#33a7eb',
+    main: '#52525b',
+    light: '#71717a',
     contrastText: '#ffffff',
   },
   background: {
-    default: '#f8f9fd',
+    default: '#fafafa',
     paper: '#ffffff',
   },
   chip: {
-    background: '#c3efff',
-    color: '#006387',
+    background: '#e4f6fb',
+    color: '#0e7490',
   },
   logs: {
     background: '#343434',
@@ -109,34 +110,34 @@ const createLightPalette = (): PaletteOptions => ({
     },
   },
   text: {
-    primary: '#23445e',
-    secondary: '#4f6b84',
+    primary: '#09090b',
+    secondary: '#52525b',
   },
-  divider: '#e2e6f0',
+  divider: 'rgba(9, 9, 11, 0.09)',
 });
 
 const createDarkPalette = (): PaletteOptions => ({
   mode: 'dark',
   primary: {
-    main: '#6eb8ff',
-    light: '#8bcbff',
-    contrastText: '#001422',
+    main: '#22d3ee',
+    light: '#67e8f9',
+    contrastText: '#041318',
   },
   secondary: {
-    main: '#3fc9ff',
-    light: '#64d6ff',
-    contrastText: '#001422',
+    main: '#a1a1aa',
+    light: '#d4d4d8',
+    contrastText: '#09090b',
   },
   background: {
-    default: '#0d1a26',
-    paper: '#142737',
+    default: '#09090b',
+    paper: '#0e0e11',
   },
   chip: {
-    background: '#1e3a52',
-    color: '#a6d7ff',
+    background: '#17171b',
+    color: '#e4e4e7',
   },
   logs: {
-    background: '#0d1a26',
+    background: '#09090b',
     text: {
       default: '#eeeeee',
       error: '#ee6666',
@@ -144,10 +145,10 @@ const createDarkPalette = (): PaletteOptions => ({
     },
   },
   text: {
-    primary: '#e0f2ff',
-    secondary: '#adc9df',
+    primary: '#fafafa',
+    secondary: '#a1a1aa',
   },
-  divider: '#1f3547',
+  divider: 'rgba(255, 255, 255, 0.08)',
 });
 
 const createCustomTheme = (mode: PaletteMode) => {
@@ -157,28 +158,32 @@ const createCustomTheme = (mode: PaletteMode) => {
     palette,
     typography: baseTypography,
     monoTypography,
+    shape: { borderRadius: 0 },
   });
 
   const isDark = mode === 'dark';
-  const cardHeaderBackground = isDark ? '#1c3245' : '#f2f4fa';
+  const cardHeaderBackground = isDark ? '#121216' : '#f4f4f5';
   const tableAlternateRow = isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8f9fd';
-  const tableHover = isDark ? 'rgba(110, 184, 255, 0.12)' : 'rgba(51, 219, 238, 0.07)';
-  const toolbarBackground = isDark ? '#0f1f2c' : theme.palette.text.primary;
-  const tooltipImageBackground = isDark ? '#142737' : '#ffffff';
+  const tableHover = isDark ? 'rgba(34, 211, 238, 0.08)' : 'rgba(51, 219, 238, 0.07)';
+  const toolbarBackground = isDark ? '#0b0b0e' : theme.palette.text.primary;
+  const tooltipImageBackground = isDark ? '#0e0e11' : '#ffffff';
   const tooltipImageBorder = isDark ? '1px solid rgba(160, 200, 255, 0.35)' : '1px solid rgba(97, 97, 97, 0.9)';
-  const dialogSecondaryHover = isDark ? 'rgba(110, 184, 255, 0.15)' : 'rgba(42, 80, 111, 0.04)';
+  const dialogSecondaryHover = isDark ? 'rgba(34, 211, 238, 0.12)' : 'rgba(42, 80, 111, 0.04)';
   const chipBackground = theme.palette.chip?.background ?? (isDark ? '#1e3a52' : '#c3efff');
   const chipColor = theme.palette.chip?.color ?? (isDark ? '#a6d7ff' : '#006387');
   const menuItemSelected =
-    theme.palette.action?.hover ?? (isDark ? 'rgba(110, 184, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)');
+    theme.palette.action?.hover ?? (isDark ? 'rgba(34, 211, 238, 0.1)' : 'rgba(0, 0, 0, 0.08)');
 
   theme = createTheme(theme, {
     components: {
+      // every list uses the Vector empty state instead of react-admin's default
+      // `emptyWhileLoading` stops the toolbar / search / buttons flashing before an empty list resolves
+      RaList: { defaultProps: { empty: <ListEmpty />, emptyWhileLoading: true } },
       MuiCssBaseline: {
         styleOverrides: css`
           * {
             font-family:
-              NeueHansKendrick,
+              Inter,
               system-ui,
               -apple-system,
               Segoe UI,
@@ -211,14 +216,67 @@ const createCustomTheme = (mode: PaletteMode) => {
             color: ${theme.palette.text.primary};
           }
 
+          /* the top bar is fixed: reserve its height with padding (a margin made the page 56px too tall) */
           .RaLayout-appFrame {
-            margin-top: 60px !important;
+            margin-top: 0 !important;
+            padding-top: 56px;
+          }
+
+          /* edit / create forms render inside the Vector slide-over sheet */
+          .vx-sheet {
+            .RaEdit-main,
+            .RaCreate-main {
+              display: block !important;
+              height: auto !important;
+              width: 100%;
+              margin: 0 !important;
+
+              > div {
+                padding: 0 !important;
+                max-width: none !important;
+              }
+            }
+
+            .RaEdit-card,
+            .RaCreate-card {
+              border: 0 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              overflow: visible !important;
+            }
+
+            .RaSimpleForm-form,
+            .RaTabbedForm-content,
+            form {
+              padding: 0 !important;
+            }
+
+            .MuiCardContent-root {
+              padding: 0 !important;
+            }
+
+            /* Save / Delete stay reachable at the bottom of the sheet */
+            .RaToolbar-desktopToolbar,
+            .RaToolbar-mobileToolbar,
+            .MuiToolbar-root.RaToolbar-desktopToolbar {
+              position: sticky;
+              bottom: 0;
+              z-index: 2;
+              display: flex;
+              gap: 12px;
+              justify-content: flex-start !important;
+              padding: 14px 24px !important;
+              margin: 24px -24px -24px !important;
+              min-height: 0 !important;
+              background: ${theme.palette.background.paper} !important;
+              border-top: 1px solid ${theme.palette.divider};
+            }
           }
 
           #main-content {
             background: ${theme.palette.background.default} !important;
-            padding: 15px !important;
-            margin-left: 230px;
+            padding: 24px !important;
+            min-width: 0;
           }
 
           .RaShow-main,
@@ -415,6 +473,7 @@ const createCustomTheme = (mode: PaletteMode) => {
           root: {
             'background': chipBackground,
             'border': 'none',
+            'borderRadius': 0,
 
             '.MuiChip-label, .MuiChip-icon': {
               'color': `${chipColor}!important`,
@@ -470,13 +529,13 @@ const createCustomTheme = (mode: PaletteMode) => {
         styleOverrides: {
           root: {
             transform: 'none',
-            fontWeight: 'bold',
+            fontWeight: 500,
             display: 'block',
             position: 'unset',
             lineHeight: 1,
-            fontSize: 14,
+            fontSize: 13,
             color: theme.palette.text.primary,
-            marginBottom: 5,
+            marginBottom: 6,
           },
         },
       },
@@ -495,9 +554,9 @@ const createCustomTheme = (mode: PaletteMode) => {
             borderColor: theme.palette.text.disabled,
           },
           root: {
-            'borderRadius': 5,
-            'height': 48,
-            'fontSize': 16,
+            'borderRadius': 0,
+            'height': 40,
+            'fontSize': 14,
             'lineHeight': 1,
             'background': theme.palette.background.paper,
 
@@ -515,8 +574,8 @@ const createCustomTheme = (mode: PaletteMode) => {
             },
 
             'input': {
-              padding: '14px 16px',
-              fontSize: 16,
+              padding: '10px 12px',
+              fontSize: 14,
               height: 'auto',
             },
 
@@ -556,8 +615,8 @@ const createCustomTheme = (mode: PaletteMode) => {
         styleOverrides: {
           root: {
             background: theme.palette.background.paper,
-            borderRadius: 10,
-            boxShadow: isDark ? 'rgba(0, 0, 0, 0.45) 0px 10px 30px -12px' : 'rgba(0, 0, 0, 0.1) 0px 0px 6px 0px',
+            borderRadius: 0,
+            boxShadow: 'none',
             border: `1px solid ${theme.palette.divider}`,
             overflow: 'hidden',
           },
@@ -615,17 +674,25 @@ const createCustomTheme = (mode: PaletteMode) => {
 
             'th': {
               textTransform: 'uppercase',
-              fontSize: '12px',
-              fontWeight: 'bold',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              color: theme.palette.text.secondary,
               backgroundColor: `${cardHeaderBackground}!important`,
             },
 
             'th, td': {
               border: 'none',
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              padding: '10px 16px',
+            },
+
+            'tbody tr:last-of-type td': {
+              borderBottom: 'none',
             },
 
             'tbody tr:nth-of-type(even)': {
-              backgroundColor: tableAlternateRow,
+              backgroundColor: 'transparent',
             },
 
             'tr.MuiTableRow-hover:hover': {
@@ -638,6 +705,7 @@ const createCustomTheme = (mode: PaletteMode) => {
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
+            'borderRadius': 0,
             '&.isImage': {
               background: tooltipImageBackground,
               border: tooltipImageBorder,

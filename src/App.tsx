@@ -62,12 +62,13 @@ import userKey from './components/userKey';
 import balenaOs from './components/balenaOs';
 import DeviceDashboard from './dashboards/device';
 import MainDashboard from './dashboards/main';
+import VectorLogin from './vector/pages/Login';
 import openBalenaDataProvider from './dataProvider/openBalenaDataProvider';
-import TreeMenu from './ui/TreeMenu';
+import VectorSidebar from './vector/layout/VectorSidebar';
 import versions from './versions';
 import environment from './lib/reactAppEnv';
 import ThemeModeProvider, { useThemeMode } from './ui/ThemeModeProvider';
-import AppHeader from './ui/AppHeader';
+import VectorTopbar from './vector/layout/VectorTopbar';
 
 const httpClient = (url: string, options: Options = {}): ReturnType<typeof fetchUtils.fetchJson> => {
   const headers = new Headers((options.headers as HeadersInit) ?? { Accept: 'application/json' });
@@ -105,7 +106,7 @@ const customRoutes: React.ReactElement[] = [
 const treeLayout: React.FC<React.ComponentProps<typeof Layout>> = (props) => {
   return (
     <>
-      <Layout {...props} sidebar={TreeMenu} appBar={AppHeader} />
+      <Layout {...props} sidebar={VectorSidebar} appBar={VectorTopbar} />
       <CssBaseline />
     </>
   );
@@ -117,10 +118,11 @@ const OpenBalenaAdmin: React.FC = () => {
   return (
     <Admin
       requireAuth
-      title='Open Balena Admin'
+      title='Vector'
       disableTelemetry={true}
       dataProvider={dataProvider}
       authProvider={openbalenaAuthProvider}
+      loginPage={VectorLogin}
       dashboard={MainDashboard}
       layout={treeLayout}
       theme={theme}
