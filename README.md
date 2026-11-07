@@ -1,7 +1,16 @@
-# User Interface for Open Balena Admin
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./public/brand/vector-logo-dark.png">
+    <img src="./public/brand/vector-logo-light.png" alt="Protoform Vector" width="420">
+  </picture>
+</p>
 
-User interface for [open-balena-admin](https://github.com/ob-community/open-balena-admin), an admin interface for
-open-balena.
+# Vector UI
+
+Admin interface for **Vector**, Protoform's fleet management platform. It is based on
+[open-balena-admin](https://github.com/ob-community/open-balena-admin) (MIT), an admin interface for
+open-balena. Credit to Francois Zaninotto, Marmelab and Raphael Scheible; the original license is kept in
+[LICENSE](LICENSE).
 
 ## Documentation
 
