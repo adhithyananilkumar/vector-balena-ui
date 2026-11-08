@@ -13,7 +13,7 @@ const Row: React.FC<RowProps> = ({ children, sx }) => {
         display: 'grid',
         gridAutoFlow: 'column',
         gridAutoColumns: 'auto',
-        gap: '30px',
+        gap: '16px',
         width: '100%',
         ...sx,
       }}

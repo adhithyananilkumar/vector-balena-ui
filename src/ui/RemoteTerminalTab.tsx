@@ -14,6 +14,7 @@ import {
 } from '../lib/builtInRemoteAccess';
 import { createTerminalDecoder } from '../lib/remoteAccessUi';
 import { RemoteTargetSelect } from './RemoteTargetSelect';
+import { serverUrl } from '../lib/serverUrl';
 
 export type { RemoteTarget as TerminalTarget } from '../lib/builtInRemoteAccess';
 export type TerminalStatus = 'disconnected' | 'connecting' | 'connected';
@@ -73,7 +74,31 @@ export const RemoteTerminalTab: React.FC<Props> = ({
       convertEol: true,
       fontSize: 13,
       fontFamily: terminalFontFamily,
-      theme: { background: '#111923', foreground: '#e5edf5' },
+      cursorStyle: 'bar',
+      scrollback: 5000,
+      theme: {
+        background: '#0b0f14',
+        foreground: '#d6dee8',
+        cursor: '#22d3ee',
+        cursorAccent: '#0b0f14',
+        selectionBackground: 'rgba(34,211,238,0.28)',
+        black: '#1b222c',
+        red: '#f2777a',
+        green: '#7fd99a',
+        yellow: '#f0c674',
+        blue: '#6aa9ff',
+        magenta: '#c792ea',
+        cyan: '#4fd6e6',
+        white: '#d6dee8',
+        brightBlack: '#5b6877',
+        brightRed: '#ff8f8f',
+        brightGreen: '#9bf0b3',
+        brightYellow: '#ffd98a',
+        brightBlue: '#8dbdff',
+        brightMagenta: '#dcaaff',
+        brightCyan: '#7ae9f5',
+        brightWhite: '#ffffff',
+      },
     });
     const addon = new FitAddon();
     instance.loadAddon(addon);
@@ -132,7 +157,7 @@ export const RemoteTerminalTab: React.FC<Props> = ({
     setStatus('connecting');
     terminal.current?.reset();
     try {
-      const response = await fetch('/remote/session', {
+      const response = await fetch(serverUrl('/remote/session'), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ deviceUuid }),
@@ -213,7 +238,7 @@ export const RemoteTerminalTab: React.FC<Props> = ({
           {error}
         </Alert>
       )}
-      <Box sx={{ position: 'relative', flex: 1, minHeight: 100, bgcolor: '#111923' }}>
+      <Box sx={{ position: 'relative', flex: 1, minHeight: 100, bgcolor: '#0b0f14' }}>
         <Box
           ref={element}
           sx={{
@@ -232,8 +257,32 @@ export const RemoteTerminalTab: React.FC<Props> = ({
             spacing={2}
             alignItems='center'
             justifyContent='center'
-            sx={{ position: 'absolute', inset: 0, bgcolor: '#111923ee', color: '#e5edf5' }}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              color: '#e5edf5',
+              background:
+                'radial-gradient(60% 60% at 50% 40%, rgba(34,211,238,0.10), transparent 70%), rgba(11,15,20,0.94)',
+            }}
           >
+            <Box
+              aria-hidden
+              sx={{
+                width: 52,
+                height: 52,
+                borderRadius: '14px',
+                display: 'grid',
+                placeItems: 'center',
+                border: '1px solid rgba(255,255,255,0.14)',
+                bgcolor: 'rgba(255,255,255,0.04)',
+                fontFamily: terminalFontFamily,
+                fontSize: 18,
+                fontWeight: 700,
+                color: '#22d3ee',
+              }}
+            >
+              {'>_'}
+            </Box>
             <Typography variant='subtitle1' fontWeight={600}>
               Start a terminal session
             </Typography>
@@ -243,9 +292,15 @@ export const RemoteTerminalTab: React.FC<Props> = ({
               disabled={status === 'connecting'}
               onChange={setTargetId}
               ariaLabel='Terminal target'
-              sx={{ width: 240 }}
+              sx={{ width: 260 }}
             />
-            <Button size='small' variant='contained' onClick={action} disabled={!token || !deviceUuid}>
+            <Button
+              size='medium'
+              variant='contained'
+              onClick={action}
+              disabled={!token || !deviceUuid}
+              sx={{ borderRadius: '8px', px: 3, textTransform: 'none', fontWeight: 600 }}
+            >
               {status === 'connecting' ? 'Cancel connection' : 'Start terminal'}
             </Button>
             {status === 'connecting' && <Typography variant='caption'>Connecting to {label}…</Typography>}

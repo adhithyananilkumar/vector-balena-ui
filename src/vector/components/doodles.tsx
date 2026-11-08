@@ -186,16 +186,98 @@ export const FleetDoodle: React.FC<{ className?: string }> = ({ className }) => 
   );
 };
 
-/** Neutral placeholder for lists that have no dedicated illustration. */
-export const EmptyFrameDoodle: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox='0 0 360 240' className={className} role='img' aria-label='Empty'>
+/** An open, empty shipping box with an item waiting to be dropped in: the generic "nothing here yet". */
+export const EmptyBoxDoodle: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox='0 0 360 240' className={className} role='img' aria-label='Empty box'>
     <Brackets w={360} h={240} />
-    <path d='M34 120 H326 M180 24 V216' stroke='currentColor' strokeOpacity='0.2' strokeDasharray='6 4' />
-    <rect x='110' y='72' width='140' height='96' fill='var(--card)' stroke='currentColor' strokeOpacity='0.7' strokeWidth='1.5' strokeDasharray='6 4' />
-    <path d='M110 72 L250 168 M250 72 L110 168' stroke='currentColor' strokeOpacity='0.25' />
-    <rect x='172' y='112' width='16' height='16' fill='var(--card)' stroke='var(--accent)' strokeWidth='1.5' />
-    <rect x='177' y='117' width='6' height='6' fill='var(--accent)' />
-    <text x='180' y='198' textAnchor='middle' fontSize='9' fill='currentColor' fillOpacity='0.6' style={mono}>
+    <path d='M34 196 H326' stroke='currentColor' strokeOpacity='0.18' strokeDasharray='6 4' />
+
+    {/* the missing item, dropping in */}
+    <polygon points='180,18 204,30 180,42 156,30' fill='none' stroke='var(--accent)' strokeWidth='1.5' strokeDasharray='3 3' />
+    <path d='M156 30 V42 M204 30 V42 M180 42 V54' stroke='var(--accent)' strokeOpacity='0.6' strokeDasharray='3 3' />
+    <path d='M180 58 V92' stroke='var(--accent)' strokeWidth='1.5' strokeDasharray='3 4' className='animate-flow' fill='none' />
+    <polygon points='174,88 186,88 180,98' fill='var(--accent)' />
+
+    {/* box: inside walls, floor, then the two front faces */}
+    <polygon points='110,104 180,70 180,128 110,162' fill='var(--card)' stroke='currentColor' strokeOpacity='0.55' />
+    <polygon points='180,70 250,104 250,162 180,128' fill='var(--card)' stroke='currentColor' strokeOpacity='0.55' />
+    <polygon points='110,162 180,128 250,162 180,196' fill='none' stroke='currentColor' strokeOpacity='0.4' strokeDasharray='3 3' />
+    <polygon points='110,104 180,138 180,196 110,162' fill='var(--card)' stroke='currentColor' strokeWidth='1.5' />
+    <polygon points='180,138 250,104 250,162 180,196' fill='var(--card)' stroke='currentColor' strokeWidth='1.5' />
+
+    {/* shipping label and status stripe */}
+    <polygon points='122,126 150,140 150,156 122,142' fill='none' stroke='currentColor' strokeOpacity='0.5' />
+    <path d='M127 133 L145 142 M127 139 L141 146' stroke='currentColor' strokeOpacity='0.4' />
+    <polygon points='198,140 232,123 232,131 198,148' fill='var(--accent)' />
+
+    {/* height dimension */}
+    <g stroke='currentColor' strokeOpacity='0.55' fill='none'>
+      <path d='M268 104 V162 M264 104 H272 M264 162 H272' />
+    </g>
+    <text x='279' y='137' fontSize='9' fill='currentColor' fillOpacity='0.65' style={mono}>
+      00
+    </text>
+
+    <text x='28' y='42' fontSize='9' fill='currentColor' fillOpacity='0.6' style={mono}>
+      ITEMS / 00
+    </text>
+    <text x='180' y='224' textAnchor='middle' fontSize='9' fill='currentColor' fillOpacity='0.55' style={mono}>
+      NO RECORDS
+    </text>
+  </svg>
+);
+
+/** Kept for existing imports. */
+export const EmptyFrameDoodle = EmptyBoxDoodle;
+
+/** A key and its dimension line, for API keys and SSH keys. */
+export const KeyDoodle: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox='0 0 360 240' className={className} role='img' aria-label='Key illustration'>
+    <Brackets w={360} h={240} />
+    <path d='M44 120 H316' stroke='currentColor' strokeOpacity='0.22' strokeDasharray='6 4' />
+    <circle cx='112' cy='120' r='50' fill='none' stroke='currentColor' strokeOpacity='0.3' strokeDasharray='3 4' />
+    <circle cx='112' cy='120' r='38' fill='var(--card)' stroke='currentColor' strokeWidth='1.5' />
+    <circle cx='112' cy='120' r='15' fill='none' stroke='currentColor' strokeWidth='1.5' />
+    <rect x='107' y='115' width='10' height='10' fill='var(--accent)' />
+    <path d='M148 112 H274 V140 H262 V127 H250 V135 H238 V127 H148' fill='var(--card)' stroke='currentColor' strokeWidth='1.5' strokeLinejoin='miter' />
+    <path d='M160 120 H226' stroke='currentColor' strokeOpacity='0.4' />
+    <g stroke='currentColor' strokeOpacity='0.6' fill='none'>
+      <path d='M74 178 V190 M274 178 V190 M74 184 H274' />
+      <path d='M78 181 L74 184 L78 187 M270 181 L274 184 L270 187' />
+    </g>
+    <text x='174' y='176' textAnchor='middle' fontSize='9' fill='currentColor' fillOpacity='0.7' style={mono}>
+      86.0
+    </text>
+    <text x='28' y='42' fontSize='9' fill='currentColor' fillOpacity='0.6' style={mono}>
+      KEYS / 00
+    </text>
+    <text x='332' y='226' textAnchor='end' fontSize='9' fill='currentColor' fillOpacity='0.5' style={mono}>
+      NO RECORDS
+    </text>
+  </svg>
+);
+
+/** An ID card with two ghost cards behind it, for users and organizations. */
+export const PeopleDoodle: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox='0 0 360 240' className={className} role='img' aria-label='Members illustration'>
+    <Brackets w={360} h={240} />
+    <path d='M180 24 V216' stroke='currentColor' strokeOpacity='0.18' strokeDasharray='6 4' />
+    {/* ghost cards */}
+    <rect x='84' y='86' width='160' height='104' fill='none' stroke='currentColor' strokeOpacity='0.28' strokeDasharray='4 4' />
+    <rect x='116' y='54' width='160' height='104' fill='none' stroke='currentColor' strokeOpacity='0.28' strokeDasharray='4 4' />
+    {/* card */}
+    <rect x='100' y='70' width='160' height='104' fill='var(--card)' stroke='currentColor' strokeWidth='1.5' />
+    <path d='M164 70 V84 H196 V70' fill='none' stroke='currentColor' strokeOpacity='0.6' />
+    <rect x='116' y='96' width='44' height='44' fill='none' stroke='currentColor' strokeOpacity='0.7' />
+    <circle cx='138' cy='111' r='7' fill='none' stroke='currentColor' strokeWidth='1.3' />
+    <path d='M124 136 C124 124 152 124 152 136' fill='none' stroke='currentColor' strokeWidth='1.3' />
+    <path d='M172 102 H244 M172 116 H228 M172 130 H238' stroke='currentColor' strokeOpacity='0.45' strokeWidth='2' />
+    <rect x='116' y='152' width='36' height='6' fill='var(--accent)' />
+    <path d='M160 155 H244' stroke='currentColor' strokeOpacity='0.3' />
+    <text x='28' y='42' fontSize='9' fill='currentColor' fillOpacity='0.6' style={mono}>
+      MEMBERS / 00
+    </text>
+    <text x='332' y='226' textAnchor='end' fontSize='9' fill='currentColor' fillOpacity='0.5' style={mono}>
       NO RECORDS
     </text>
   </svg>

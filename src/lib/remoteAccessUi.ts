@@ -17,3 +17,16 @@ export const createTerminalDecoder = (channel: number): ((buffer: ArrayBuffer) =
     return decoder.decode(new Uint8Array(buffer, 4), { stream: true });
   };
 };
+
+/** "1.4 MB" style size for transfer progress. */
+export const formatTransferBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${unit === 0 ? value : value.toFixed(value >= 100 ? 0 : 1)} ${units[unit]}`;
+};

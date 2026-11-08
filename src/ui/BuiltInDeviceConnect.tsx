@@ -47,6 +47,7 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
   const [active, setActive] = React.useState(1);
   const nextId = React.useRef(2);
   const [expanded, setExpanded] = React.useState(false);
+  const activeStatus = tabs.find((tab) => tab.id === active)?.status ?? 'disconnected';
   const token = authProvider?.getSession().jwt ?? '';
   const deviceUuid = typeof record.uuid === 'string' ? record.uuid : '';
 
@@ -87,7 +88,9 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'background.paper',
+        bgcolor: '#0b0f14',
+        color: '#dbe4ee',
+        border: '1px solid rgba(255,255,255,0.08)',
         minWidth: 0,
         ...(expanded ? { position: 'fixed', inset: 0, zIndex: 1400, height: '100dvh' } : { minHeight: 490 }),
       }}
@@ -101,13 +104,40 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
       <Stack
         direction='row'
         alignItems='center'
-        spacing={1}
-        sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}
+        spacing={1.25}
+        sx={{ px: 2, py: 1.25, bgcolor: '#0e131a', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
       >
-        <TerminalIcon fontSize='small' />
-        <Typography variant='subtitle2' sx={{ flex: 1 }}>
+        <TerminalIcon fontSize='small' sx={{ color: '#22d3ee' }} />
+        <Typography variant='subtitle2' sx={{ flex: 1, color: '#dbe4ee', fontWeight: 600 }}>
           Terminal · {String(record['device name'] ?? 'Unnamed device')}
         </Typography>
+        <Box
+          component='span'
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1.25,
+            py: 0.25,
+            borderRadius: 99,
+            fontSize: 11.5,
+            fontWeight: 600,
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: activeStatus === 'connected' ? '#68d391' : activeStatus === 'connecting' ? '#f6c45b' : '#8da0b3',
+          }}
+        >
+          <Box
+            component='span'
+            sx={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              bgcolor: 'currentColor',
+              boxShadow: activeStatus === 'connected' ? '0 0 8px currentColor' : 'none',
+            }}
+          />
+          {activeStatus === 'connected' ? 'Connected' : activeStatus === 'connecting' ? 'Connecting' : 'Not connected'}
+        </Box>
         <Tooltip title={expanded ? 'Collapse terminal' : 'Expand terminal'}>
           <IconButton
             size='small'
@@ -122,7 +152,7 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
         <Alert severity='error'>Unable to load terminal targets: {presentation.error.message}</Alert>
       ) : null}
       {presentation.isPending && <LinearProgress aria-label='Loading terminal targets' />}
-      <Stack direction='row' alignItems='center' sx={{ bgcolor: '#182330', px: 0.5 }}>
+      <Stack direction='row' alignItems='center' sx={{ bgcolor: '#0e131a', px: 1, py: 0.75, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <Box role='tablist' aria-label='Terminal sessions' sx={{ display: 'flex', overflowX: 'auto', flex: 1 }}>
           {tabs.map((tab, index) => {
             const color = getServiceColors(tab.label).backgroundColor;
@@ -132,9 +162,12 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  borderBottom: 2,
-                  borderColor: active === tab.id ? color : 'transparent',
-                  bgcolor: active === tab.id ? '#253446' : 'transparent',
+                  mr: 0.5,
+                  borderRadius: '8px',
+                  border: '1px solid',
+                  borderColor: active === tab.id ? 'rgba(255,255,255,0.14)' : 'transparent',
+                  bgcolor: active === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
                 }}
               >
                 <Box
@@ -148,7 +181,8 @@ export const BuiltInDeviceConnect: React.FC<BuiltInDeviceConnectProps> = ({ reco
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
-                    p: 1,
+                    px: 1.25,
+                    py: 0.75,
                     border: 0,
                     bgcolor: 'transparent',
                     color,

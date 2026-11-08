@@ -5,6 +5,7 @@ import type { JwtPayload } from 'jwt-decode';
 import { jwtDecode } from 'jwt-decode';
 import type { AuthProvider } from 'react-admin';
 import environment from '../lib/reactAppEnv';
+import { serverUrl } from '../lib/serverUrl';
 import { withPermissionHint } from '../lib/httpErrorMessage';
 
 interface LoginParams {
@@ -47,7 +48,7 @@ const getUsername = async (token: string, payload: OpenBalenaJwtPayload): Promis
     return payload.username;
   }
 
-  const response = await fetch('/admin-db/actions/access-context', {
+  const response = await fetch(serverUrl('/admin-db/actions/access-context'), {
     headers: new Headers({ Authorization: `Bearer ${token}` }),
   });
   if (!response.ok) {

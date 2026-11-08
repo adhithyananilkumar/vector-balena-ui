@@ -17,9 +17,10 @@ import {
 } from 'react-admin';
 import type { FunctionFieldProps, RaRecord } from 'react-admin';
 import DeleteReleaseButton from '../ui/DeleteReleaseButton';
+import RenameReleaseButton, { releaseDisplayName } from '../ui/RenameReleaseButton';
 import SemVerTextField from '../ui/SemVerTextField';
 
-const releaseFilters = [<SearchInput source='status@ilike' alwaysOn />];
+const releaseFilters = [<SearchInput source='note@ilike' placeholder='Search by name' alwaysOn />];
 
 type BooleanBinaryFieldProps = Omit<FunctionFieldProps<RaRecord>, 'render'>;
 
@@ -71,6 +72,16 @@ export const ReleaseList: React.FC = (props) => {
         >
           <BooleanBinaryField source='is host' />
         </ReferenceField>
+        <FunctionField
+          label='Release'
+          sortable={false}
+          render={(record: RaRecord) => (
+            <div style={{ lineHeight: 1.3 }}>
+              <div style={{ fontWeight: 600 }}>{releaseDisplayName(record)}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 12, opacity: 0.6 }}>{String(record.commit ?? '').slice(0, 7)}</div>
+            </div>
+          )}
+        />
         <SemVerTextField label='Version' sortable sortBy='version' />
         <DateField label='Date' source='created at' />
         <ReferenceManyCount
@@ -91,6 +102,7 @@ export const ReleaseList: React.FC = (props) => {
         </ReferenceManyField>
 
         <Toolbar>
+          <RenameReleaseButton />
           <DeleteReleaseButton variant='outlined' size='small' context={useDataProvider()} />
         </Toolbar>
       </Datagrid>

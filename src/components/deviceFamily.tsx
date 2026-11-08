@@ -1,3 +1,4 @@
+import { BrandSlugField } from '../vector/components/brands';
 import * as React from 'react';
 import {
   Create,
@@ -26,7 +27,7 @@ export const DeviceFamilyList: React.FC = () => {
   return (
     <List title='Device Families' actions={canManage ? undefined : false}>
       <Datagrid size='medium' rowClick={false} bulkActionButtons={canManage ? undefined : false}>
-        <TextField label='Slug' source='slug' />
+        <BrandSlugField label='Slug' source='slug' kind='board' />
         <TextField label='Name' source='name' />
         <ReferenceField
           label='Manufacturer'

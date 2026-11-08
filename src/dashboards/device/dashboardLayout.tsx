@@ -30,16 +30,17 @@ const DashboardLayout: React.FC = () => {
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'space-between',
+          gap: 2,
+          alignItems: 'flex-start',
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ flex: '2 1 600px', margin: '7.5px', minWidth: 0 }}>
-          <Card style={{ padding: '15px' }}>
+        <div style={{ flex: '2 1 600px', minWidth: 0, display: 'grid', gap: 16, alignContent: 'start' }}>
+          <Card sx={{ padding: '20px' }}>
             <ControlsWidget />
           </Card>
 
-          <Card sx={{ padding: '15px', marginTop: '15px' }}>
+          <Card sx={{ padding: '4px 20px 20px', minHeight: 520 }}>
             <Title title='/' />
             <TabbedShowLayout>
               <TabbedShowLayout.Tab label='Summary'>
@@ -60,21 +61,21 @@ const DashboardLayout: React.FC = () => {
             </TabbedShowLayout>
           </Card>
 
-          <Card sx={{ padding: '15px', marginTop: '15px' }}>
+          <Card sx={{ padding: '20px' }}>
             <DeviceServices device={record} showLogSelection />
           </Card>
         </div>
 
-        <div style={{ flex: '3 1 550px', margin: '7.5px', minWidth: 0 }}>
-          <Card sx={{ padding: '15px' }}>
+        <div style={{ flex: '3 1 550px', minWidth: 0, display: 'grid', gap: 16, alignContent: 'start' }}>
+          <Card sx={{ padding: 0 }}>
             <UsageWidget />
           </Card>
 
-          <Card sx={{ padding: 0, marginTop: '15px' }}>
+          <Card sx={{ padding: 0 }}>
             <DeviceLogs />
           </Card>
 
-          <Card sx={{ padding: 0, marginTop: '15px', position: 'relative' }}>
+          <Card sx={{ padding: 0, position: 'relative' }}>
             {!!environment.REACT_APP_OPEN_BALENA_REMOTE_URL && (
               <DeviceConnectButton
                 size='small'

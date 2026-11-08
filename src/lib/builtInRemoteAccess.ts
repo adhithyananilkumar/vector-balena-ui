@@ -27,8 +27,8 @@ export interface RemoteControlMessage {
   message?: string;
 }
 
-export const remoteWebSocketUrl = (location: Pick<Location, 'protocol' | 'host'> = window.location): string =>
-  `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/remote/ws`;
+export const remoteWebSocketUrl = (location?: Pick<Location, 'protocol' | 'host'>): string =>
+  serverWebSocketUrl('/remote/ws', location);
 
 export const encodeTerminalInput = (channel: number, input: string): ArrayBuffer => {
   const payload = new TextEncoder().encode(input);
@@ -64,7 +64,7 @@ export const remoteTransferUrl = (
     // Preserve URLs for existing callers; new UI requests always supply an explicit kind.
     if (containerKind !== undefined) query.set('containerKind', selection.containerKind);
   }
-  return `/remote/sftp/${operation}?${query.toString()}`;
+  return serverUrl(`/remote/sftp/${operation}?${query.toString()}`);
 };
 
 export const responseError = async (response: Response, fallback: string): Promise<Error> => {
@@ -80,3 +80,4 @@ export const responseError = async (response: Response, fallback: string): Promi
   return new Error(message);
 };
 import { parseRemoteTarget, type ContainerKind, type RemoteTargetSelection } from './remoteTarget';
+import { serverUrl, serverWebSocketUrl } from './serverUrl';

@@ -63,12 +63,17 @@ import balenaOs from './components/balenaOs';
 import DeviceDashboard from './dashboards/device';
 import MainDashboard from './dashboards/main';
 import VectorLogin from './vector/pages/Login';
+import BaseImages from './vector/pages/BaseImages';
+import Deltas from './vector/pages/Deltas';
+import AddDevice from './vector/pages/AddDevice';
+import Docs from './vector/pages/Docs';
 import openBalenaDataProvider from './dataProvider/openBalenaDataProvider';
 import VectorSidebar from './vector/layout/VectorSidebar';
 import versions from './versions';
 import environment from './lib/reactAppEnv';
 import ThemeModeProvider, { useThemeMode } from './ui/ThemeModeProvider';
 import VectorTopbar from './vector/layout/VectorTopbar';
+import { withSheets } from './vector/layout/sheet';
 
 const httpClient = (url: string, options: Options = {}): ReturnType<typeof fetchUtils.fetchJson> => {
   const headers = new Headers((options.headers as HeadersInit) ?? { Accept: 'application/json' });
@@ -101,6 +106,15 @@ const NavigateToDevice: React.FC = () => {
 
 const customRoutes: React.ReactElement[] = [
   <Route key='custom-route-device-summary' path='/devices/:uuid/summary' element={<NavigateToDevice />} />,
+  <Route key='custom-route-base-images' path='/base-images' element={<BaseImages />} />,
+  <Route key='custom-route-deltas' path='/deltas' element={<Deltas />} />,
+  <Route key='custom-route-add-device' path='/add-device' element={<AddDevice />} />,
+];
+
+/** Full-screen pages: rendered without the sidebar/top bar (they bring their own header). */
+const fullScreenRoutes: React.ReactElement[] = [
+  <Route key='full-route-docs' path='/docs' element={<Docs />} />,
+  <Route key='full-route-docs-page' path='/docs/:slug' element={<Docs />} />,
 ];
 
 const treeLayout: React.FC<React.ComponentProps<typeof Layout>> = (props) => {
@@ -127,26 +141,27 @@ const OpenBalenaAdmin: React.FC = () => {
       layout={treeLayout}
       theme={theme}
     >
+      <CustomRoutes noLayout>{fullScreenRoutes}</CustomRoutes>
       <CustomRoutes>{customRoutes}</CustomRoutes>
       <Resource name='menu-access' icon={SecurityIcon} options={{ label: 'Access', isMenuParent: true }} />
       <Resource
         name='organization'
         icon={BusinessIcon}
         options={{ label: 'Orgs', menuParent: 'menu-access' }}
-        {...organization}
+        {...withSheets(organization)}
       />
-      <Resource name='user' icon={PeopleIcon} options={{ label: 'Users', menuParent: 'menu-access' }} {...user} />
+      <Resource name='user' icon={PeopleIcon} options={{ label: 'Users', menuParent: 'menu-access' }} {...withSheets(user)} />
       <Resource
         name='api key'
         icon={VpnKeyIcon}
         options={{ label: 'API Keys', menuParent: 'menu-access' }}
-        {...apiKey}
+        {...withSheets(apiKey)}
       />
       <Resource
         name='user-has-public key'
         icon={KeyIcon}
         options={{ label: 'SSH Keys', menuParent: 'menu-access' }}
-        {...userKey}
+        {...withSheets(userKey)}
       />
 
       <Resource
@@ -154,24 +169,24 @@ const OpenBalenaAdmin: React.FC = () => {
         icon={AccountTreeIcon}
         options={{ label: 'Fleets', isMenuParent: true, menuRoute: 'application' }}
       />
-      <Resource name='application' icon={AppsIcon} options={{ label: 'Fleets', menuParent: 'menu-fleet' }} {...fleet} />
+      <Resource name='application' icon={AppsIcon} options={{ label: 'Fleets', menuParent: 'menu-fleet' }} {...withSheets(fleet)} />
       <Resource
         name='application config variable'
         icon={TuneIcon}
         options={{ label: 'Config Vars', menuParent: 'menu-fleet' }}
-        {...fleetConfigVar}
+        {...withSheets(fleetConfigVar)}
       />
       <Resource
         name='application environment variable'
         icon={PublicIcon}
         options={{ label: 'Environment Vars', menuParent: 'menu-fleet' }}
-        {...fleetEnvVar}
+        {...withSheets(fleetEnvVar)}
       />
       <Resource
         name='application tag'
         icon={LocalOfferIcon}
         options={{ label: 'Tags', menuParent: 'menu-fleet' }}
-        {...fleetTag}
+        {...withSheets(fleetTag)}
       />
 
       <Resource
@@ -183,47 +198,47 @@ const OpenBalenaAdmin: React.FC = () => {
         name='device'
         icon={DevicesIcon}
         options={{ label: 'Devices', menuParent: 'menu-device' }}
-        {...device}
+        {...withSheets(device)}
         show={DeviceDashboard}
       />
       <Resource
         name='device config variable'
         icon={TuneIcon}
         options={{ label: 'Config Vars', menuParent: 'menu-device' }}
-        {...deviceConfigVar}
+        {...withSheets(deviceConfigVar)}
       />
       <Resource
         name='device environment variable'
         icon={PublicIcon}
         options={{ label: 'Environment Vars', menuParent: 'menu-device' }}
-        {...deviceEnvVar}
+        {...withSheets(deviceEnvVar)}
       />
       <Resource
         name='device service environment variable'
         icon={MiscellaneousServicesIcon}
         options={{ label: 'Service Vars', menuParent: 'menu-device' }}
-        {...deviceServiceVar}
+        {...withSheets(deviceServiceVar)}
       />
       <Resource
         name='device tag'
         icon={LocalOfferIcon}
         options={{ label: 'Tags', menuParent: 'menu-device' }}
-        {...deviceTag}
+        {...withSheets(deviceTag)}
       />
 
       <Resource name='menu-image' icon={ImageIcon} options={{ label: 'Images', isMenuParent: true }} />
-      <Resource name='image' icon={ImageIcon} options={{ label: 'Images', menuParent: 'menu-image' }} {...image} />
+      <Resource name='image' icon={ImageIcon} options={{ label: 'Images', menuParent: 'menu-image' }} {...withSheets(image)} />
       <Resource
         name='image environment variable'
         icon={PublicIcon}
         options={{ label: 'Environment Vars', menuParent: 'menu-image' }}
-        {...imageEnvVar}
+        {...withSheets(imageEnvVar)}
       />
       <Resource
         name='image label'
         icon={LabelOutlinedIcon}
         options={{ label: 'Labels', menuParent: 'menu-image' }}
-        {...imageLabel}
+        {...withSheets(imageLabel)}
       />
 
       <Resource name='menu-release' icon={Inventory2Icon} options={{ label: 'Releases', isMenuParent: true }} />
@@ -231,13 +246,13 @@ const OpenBalenaAdmin: React.FC = () => {
         name='release'
         icon={Inventory2Icon}
         options={{ label: 'Releases', menuParent: 'menu-release' }}
-        {...release}
+        {...withSheets(release)}
       />
       <Resource
         name='release tag'
         icon={LocalOfferIcon}
         options={{ label: 'Tags', menuParent: 'menu-release' }}
-        {...releaseTag}
+        {...withSheets(releaseTag)}
       />
 
       <Resource
@@ -249,25 +264,25 @@ const OpenBalenaAdmin: React.FC = () => {
         name='service'
         icon={MiscellaneousServicesIcon}
         options={{ label: 'Services', menuParent: 'menu-service' }}
-        {...service}
+        {...withSheets(service)}
       />
       <Resource
         name='service environment variable'
         icon={PublicIcon}
         options={{ label: 'Environment Vars', menuParent: 'menu-service' }}
-        {...serviceEnvVar}
+        {...withSheets(serviceEnvVar)}
       />
       <Resource
         name='service label'
         icon={LabelOutlinedIcon}
         options={{ label: 'Labels', menuParent: 'menu-service' }}
-        {...serviceLabel}
+        {...withSheets(serviceLabel)}
       />
       <Resource
         name='balena-os'
         icon={SystemUpdateAltIcon}
         options={{ label: 'BalenaOS', menuParent: 'menu-service' }}
-        {...balenaOs}
+        {...withSheets(balenaOs)}
       />
 
       <Resource name='menu-static' icon={StorageIcon} options={{ label: 'Static Data', isMenuParent: true }} />
@@ -275,38 +290,38 @@ const OpenBalenaAdmin: React.FC = () => {
         name='config'
         icon={SettingsIcon}
         options={{ label: 'Configs', menuParent: 'menu-static', globalAdminOnly: true }}
-        {...config}
+        {...withSheets(config)}
       />
       <Resource
         name='cpu architecture'
         icon={MemoryIcon}
         options={{ label: 'CPU Architectures', menuParent: 'menu-static' }}
-        {...cpuArchitecture}
+        {...withSheets(cpuArchitecture)}
       />
       <Resource
         name='device family'
         icon={CategoryIcon}
         options={{ label: 'Device Families', menuParent: 'menu-static' }}
-        {...deviceFamily}
+        {...withSheets(deviceFamily)}
       />
       <Resource
         name='device manufacturer'
         icon={FactoryIcon}
         options={{ label: 'Device Mfgs', menuParent: 'menu-static' }}
-        {...deviceManufacturer}
+        {...withSheets(deviceManufacturer)}
       />
       <Resource
         name='device type'
         icon={DeveloperBoardIcon}
         options={{ label: 'Device Types', menuParent: 'menu-static' }}
-        {...deviceType}
+        {...withSheets(deviceType)}
       />
       {deviceTypeAliasVer ? (
         <Resource
           name='device type alias'
           icon={AltRouteIcon}
           options={{ label: 'DT Aliases', menuParent: 'menu-static' }}
-          {...deviceTypeAlias}
+          {...withSheets(deviceTypeAlias)}
         />
       ) : (
         <></>
@@ -315,19 +330,19 @@ const OpenBalenaAdmin: React.FC = () => {
         name='application type'
         icon={CategoryIcon}
         options={{ label: 'Fleet Types', menuParent: 'menu-static' }}
-        {...fleetType}
+        {...withSheets(fleetType)}
       />
       <Resource
         name='permission'
         icon={LockIcon}
         options={{ label: 'Permissions', menuParent: 'menu-static', globalAdminOnly: true }}
-        {...permission}
+        {...withSheets(permission)}
       />
       <Resource
         name='role'
         icon={AdminPanelSettingsIcon}
         options={{ label: 'Roles', menuParent: 'menu-static', globalAdminOnly: true }}
-        {...role}
+        {...withSheets(role)}
       />
 
       {/* Reference tables */}

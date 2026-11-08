@@ -1,3 +1,4 @@
+import { BrandSlugField } from '../vector/components/brands';
 import * as React from 'react';
 import {
   Create,
@@ -22,7 +23,7 @@ export const CpuArchitectureList: React.FC = () => {
   return (
     <List actions={canManage ? undefined : false}>
       <Datagrid size='medium' rowClick={false} bulkActionButtons={canManage ? undefined : false}>
-        <TextField label='Slug' source='slug' />
+        <BrandSlugField label='Slug' source='slug' kind='arch' />
 
         {canManage ? (
           <Toolbar>

@@ -11,7 +11,7 @@ const clientEnvironmentVariables = [
   'REACT_APP_OPEN_BALENA_ODATA_VERSION',
   'REACT_APP_OPEN_BALENA_REMOTE_URL',
   'REACT_APP_OPEN_BALENA_BUILT_IN_REMOTE_ENABLED',
-  'REACT_APP_OPEN_BALENA_UI_URL',
+  'REACT_APP_VECTOR_SERVER_URL',
   'REACT_APP_OPEN_BALENA_UI_VERSION',
 ];
 
@@ -21,9 +21,21 @@ export default defineConfig(({ mode }) => {
   const clientBuildEnvironment = Object.fromEntries(
     clientEnvironmentVariables.flatMap((key) => (rawEnv[key] ? [[key, rawEnv[key]]] : [])),
   );
-  clientBuildEnvironment.REACT_APP_OPEN_BALENA_BUILT_IN_REMOTE_ENABLED = rawEnv.OPEN_BALENA_TUNNEL_URL
-    ? 'true'
-    : 'false';
+  // built-in terminals and file transfer are served by the Vector server; the UI offers them unless told otherwise
+  clientBuildEnvironment.REACT_APP_OPEN_BALENA_BUILT_IN_REMOTE_ENABLED =
+    rawEnv.REACT_APP_OPEN_BALENA_BUILT_IN_REMOTE_ENABLED === 'false' ? 'false' : 'true';
+  // the dev server forwards the Vector server's routes to it, so no CORS is needed while developing
+  const vectorServer = rawEnv.VECTOR_SERVER_DEV_URL || 'http://127.0.0.1:3001';
+  const serverRoutes = [
+    '/admin-db',
+    '/balena-os',
+    '/deleteOrphanedRegistryImages',
+    '/deleteRegistryImage',
+    '/deltas',
+    '/device-supervisor-target',
+    '/device-update-options',
+    '/image-maker',
+  ];
   const port = Number(rawEnv.PORT ?? process.env.PORT ?? 3000);
   const previewPort = Number(rawEnv.PORT ?? process.env.PORT ?? 4173);
 
@@ -43,14 +55,8 @@ export default defineConfig(({ mode }) => {
       port,
       open: true,
       proxy: {
-        '/admin-db': 'http://127.0.0.1:3001',
-        '/device-update-options': 'http://127.0.0.1:3001',
-        '/device-supervisor-target': 'http://127.0.0.1:3001',
-        '/balena-os': 'http://127.0.0.1:3001',
-        '/remote': {
-          target: 'http://127.0.0.1:3001',
-          ws: true,
-        },
+        ...Object.fromEntries(serverRoutes.map((route) => [route, vectorServer])),
+        '/remote': { target: vectorServer, ws: true },
       },
     },
     preview: {

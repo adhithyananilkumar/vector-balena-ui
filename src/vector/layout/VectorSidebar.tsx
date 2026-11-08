@@ -1,52 +1,11 @@
 import React, { useEffect, useMemo } from 'react';
-import { useResourceDefinitions } from 'react-admin';
 import { Link, useLocation } from 'react-router-dom';
 import { Tooltip, useMediaQuery } from '@mui/material';
-import {
-  Boxes,
-  ChevronDown,
-  Cpu,
-  Database,
-  Layers,
-  LayoutDashboard,
-  Package,
-  ChevronLeft,
-  ChevronRight,
-  Server,
-  ShieldCheck,
-  type LucideIcon,
-} from 'lucide-react';
-import { useAdminAccessContext } from '../../hooks/useAdminAccessContext';
+import { ChevronDown, ChevronsLeft, ChevronsRight, LayoutDashboard } from 'lucide-react';
 import { VxScope } from '../components/scope';
 import { cn } from '../lib/utils';
+import { useNavGroups } from './navModel';
 import { RAIL_WIDTH, SIDEBAR_WIDTH, TOPBAR_HEIGHT, sidebarActions, useSidebar } from './sidebarStore';
-
-const groupIcons: Record<string, LucideIcon> = {
-  'menu-access': ShieldCheck,
-  'menu-fleet': Boxes,
-  'menu-device': Cpu,
-  'menu-image': Layers,
-  'menu-release': Package,
-  'menu-service': Server,
-  'menu-static': Database,
-};
-
-const humanize = (value: string): string =>
-  value
-    .split(/[_\s]+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-interface NavLeaf {
-  name: string;
-  label: string;
-}
-interface NavGroup {
-  name: string;
-  label: string;
-  icon: LucideIcon;
-  children: NavLeaf[];
-}
 
 const isActivePath = (pathname: string, name: string): boolean => {
   const base = `/${name}`;
@@ -80,32 +39,7 @@ const VectorSidebar: React.FC = () => {
     }
   }, [location.pathname]);
 
-  const definitions = useResourceDefinitions();
-  const { context: accessContext } = useAdminAccessContext();
-
-  const navGroups = useMemo<NavGroup[]>(() => {
-    const all = Object.values(definitions).filter(
-      (resource) =>
-        !resource.options?.globalAdminOnly ||
-        (accessContext != null && (!accessContext.enforcementEnabled || accessContext.globalAdmin)),
-    );
-    const labelOf = (resource: (typeof all)[number]): string =>
-      String(resource.options?.label ?? humanize(resource.name));
-
-    return all
-      .filter((resource) => resource.options?.isMenuParent && !resource.options?.hideFromMenu)
-      .map((parent) => ({
-        name: parent.name,
-        label: labelOf(parent),
-        icon: groupIcons[parent.name] ?? Layers,
-        children: parent.options?.hideChildren
-          ? []
-          : all
-              .filter((resource) => resource.options?.menuParent === parent.name && resource.hasList)
-              .map((resource) => ({ name: resource.name, label: labelOf(resource) })),
-      }))
-      .filter((group) => group.children.length > 0);
-  }, [definitions, accessContext]);
+  const navGroups = useNavGroups();
 
   // close the mobile drawer when navigating
   useEffect(() => {
@@ -209,17 +143,19 @@ const VectorSidebar: React.FC = () => {
                   <div className='relative mb-1 ml-[29px] border-l border-border'>
                     {group.children.map((child) => {
                       const active = isActivePath(pathname, child.name);
+                      const ChildIcon = child.icon;
                       return (
                         <Link
                           key={child.name}
                           to={`/${encodeURIComponent(child.name)}`}
                           aria-current={active ? 'page' : undefined}
                           className={cn(
-                            'relative flex h-8 items-center pr-3 pl-4 text-[13px] outline-none transition-colors focus-visible:bg-foreground/[0.06]',
+                            'relative flex h-8 items-center gap-2.5 pr-3 pl-4 text-[13px] outline-none transition-colors focus-visible:bg-foreground/[0.06]',
                             active ? 'bg-foreground/[0.06] font-medium text-foreground' : itemIdle,
                           )}
                         >
                           {active && <span className='absolute inset-y-0 -left-px w-0.5 bg-accent' />}
+                          <ChildIcon className={cn('size-3.5 shrink-0', active && 'text-accent')} aria-hidden />
                           <span className='truncate'>{child.label}</span>
                         </Link>
                       );
@@ -231,15 +167,15 @@ const VectorSidebar: React.FC = () => {
           })}
         </div>
 
-        {/* collapse / expand pill, sitting on the middle of the sidebar's right border */}
+        {/* collapse / expand pill, sitting on the sidebar's right border near the bottom */}
         <button
           type='button'
           onClick={sidebarActions.toggleCollapsed}
           title={`${collapsed ? 'Expand' : 'Collapse'} sidebar (Ctrl+B)`}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className='absolute top-1/2 -right-3 z-10 hidden size-6 -translate-y-1/2 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-colors outline-none hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:text-accent md:grid'
+          className='absolute -right-3.5 bottom-7 z-10 hidden h-7 w-7 place-items-center rounded-full border border-border bg-background text-foreground/80 transition-colors outline-none hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:text-accent md:grid'
         >
-          {collapsed ? <ChevronRight className='size-3.5' aria-hidden /> : <ChevronLeft className='size-3.5' aria-hidden />}
+          {collapsed ? <ChevronsRight className='size-4' strokeWidth={2.4} aria-hidden /> : <ChevronsLeft className='size-4' strokeWidth={2.4} aria-hidden />}
         </button>
       </VxScope>
     </>

@@ -1,9 +1,12 @@
+import { DeviceTypeOption, BrandSlugField } from '../vector/components/brands';
 import { useTheme } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import * as React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import AddIcon from '@mui/icons-material/Add';
 import {
   Create,
-  CreateButton,
+  Button,
   Datagrid,
   DatagridBody,
   ExportButton,
@@ -261,7 +264,8 @@ const DeviceListActions = () => (
     }}
   >
     <FilterButton />
-    <CreateButton />
+    {/* new physical devices come from the Add device flow, which also makes the config and image */}
+    <Button component={RouterLink} to='/add-device' label='Add device' variant='contained' startIcon={<AddIcon />} />
     <ExportButton />
   </TopToolbar>
 );
@@ -296,7 +300,7 @@ export const DeviceList: React.FC<ListProps<any>> = (props) => {
           </ReferenceField>
 
           <ReferenceField label='Device Type' source='is of-device type' reference='device type' link={false}>
-            <TextField source='slug' />
+            <BrandSlugField source='slug' kind='board' />
           </ReferenceField>
 
           <FunctionField
@@ -368,7 +372,7 @@ export const DeviceCreate: React.FC = () => {
             perPage={1000}
             sort={{ field: 'slug', order: 'ASC' }}
           >
-            <SelectInput optionText='slug' optionValue='id' validate={required()} size='large' />
+            <SelectInput optionText={<DeviceTypeOption />} optionValue='id' validate={required()} size='large' />
           </ReferenceInput>
 
           <ReferenceInput

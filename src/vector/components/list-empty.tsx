@@ -3,7 +3,7 @@ import { useCreatePath, useResourceContext, useResourceDefinition } from 'react-
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Button } from './button';
-import { DeviceDoodle, EmptyFrameDoodle, FleetDoodle } from './doodles';
+import { DeviceDoodle, EmptyBoxDoodle, FleetDoodle, KeyDoodle, PeopleDoodle } from './doodles';
 import { EmptyState } from './empty-state';
 import { VxScope } from './scope';
 
@@ -18,10 +18,20 @@ const ListEmpty: React.FC = () => {
   const label = String(definition.options?.label ?? humanize(resource));
   const singular = label.replace(/s$/i, '');
   const doodle =
-    resource === 'application' ? <FleetDoodle /> : resource === 'device' ? <DeviceDoodle /> : <EmptyFrameDoodle />;
+    resource === 'application' ? (
+      <FleetDoodle />
+    ) : resource === 'device' ? (
+      <DeviceDoodle />
+    ) : resource === 'api key' || resource === 'user-has-public key' ? (
+      <KeyDoodle />
+    ) : resource === 'user' || resource === 'organization' ? (
+      <PeopleDoodle />
+    ) : (
+      <EmptyBoxDoodle />
+    );
 
   return (
-    <VxScope className='flex min-h-[calc(100vh-190px)] items-center justify-center'>
+    <VxScope className='flex flex-1 items-center justify-center'>
       <EmptyState
         doodle={doodle}
         title={`No ${label.toLowerCase()} yet`}

@@ -46,6 +46,11 @@ const ThemeModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const theme = useMemo(() => createCustomTheme(resolvedMode), [resolvedMode]);
 
+  // lets plain CSS (scrollbars, native controls) follow the chosen theme
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedMode;
+  }, [resolvedMode]);
+
   const cyclePreference = useCallback(() => {
     setPreference((current) => {
       switch (current) {

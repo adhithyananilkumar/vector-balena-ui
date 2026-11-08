@@ -1,36 +1,39 @@
-import { Box, LinearProgress, Tooltip } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import * as React from 'react';
-import { LinearProgressProps, useRecordContext } from 'react-admin';
+import { useRecordContext } from 'react-admin';
 import { isDeviceOnline } from '../../lib/deviceStatus';
 
-const LinearProgressWithLabel: React.FC<
-  LinearProgressProps & {
-    label?: React.ReactNode;
-    tooltip?: string;
-    value?: number;
-    displayValue?: number;
-    displayUnits?: string;
-    offline?: boolean;
-  }
-> = ({ label, tooltip, displayValue, displayUnits, style, value, offline = false, ...progressProps }) => {
-  const valueLabel = offline
-    ? '—'
-    : displayValue !== undefined
-      ? `${displayValue}${displayUnits ?? ''}`
-      : `${Math.round(value ?? 0)}%`;
-
+/** One metric: label, a large value and a thin bar. Offline devices show dashes instead of stale numbers. */
+const Metric: React.FC<{
+  label: string;
+  value: number;
+  display?: string;
+  detail?: string;
+  offline: boolean;
+}> = ({ label, value, display, detail, offline }) => {
+  const clamped = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+  const hot = clamped >= 85;
   return (
-    <Box sx={{ mb: 2.75, mx: '10px', display: 'flex', alignItems: 'center' }} style={style}>
-      <Box sx={{ flex: 1, minWidth: '3em' }}>{label}</Box>
-      <Box sx={{ flex: 10, minWidth: '12em', mr: 1, ml: 2 }}>
-        <LinearProgress variant='determinate' color='secondary' value={offline ? 0 : value} {...progressProps} />
+    <Tooltip placement='top' arrow title={offline ? 'Unavailable while the device is offline' : (detail ?? '')}>
+      <Box sx={{ p: '14px 16px', minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>{label}</Box>
+          <Box sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>
+            {offline ? '—' : (display ?? `${Math.round(clamped)}%`)}
+          </Box>
+        </Box>
+        <Box sx={{ mt: 1.25, height: 4, bgcolor: 'action.hover' }}>
+          <Box
+            sx={{
+              height: '100%',
+              width: offline ? 0 : `${clamped}%`,
+              bgcolor: hot ? 'error.main' : 'secondary.main',
+              transition: 'width 0.4s ease',
+            }}
+          />
+        </Box>
       </Box>
-      <Box sx={{ flex: 1, minWidth: '3em' }}>
-        <Tooltip placement='top' arrow={true} title={offline ? 'Unavailable while the device is offline' : tooltip}>
-          <span>{valueLabel}</span>
-        </Tooltip>
-      </Box>
-    </Box>
+    </Tooltip>
   );
 };
 
@@ -40,61 +43,40 @@ const UsageWidget = () => {
   if (!record) return null;
 
   const offline = !isDeviceOnline(record);
+  const ratio = (used: number, total: number) => (isFinite(used / total) ? (used / total) * 100 : 0);
+  const detail = (used: number, total: number) => (isFinite(used / total) ? `${used} MB of ${total} MB` : '');
 
   return (
-    <>
-      <Box style={{ display: 'flex', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, margin: '10px 0' }}>
-          <LinearProgressWithLabel
-            label='CPU'
-            offline={offline}
-            value={isFinite(record['cpu usage']) ? record['cpu usage'] : 0}
-          />
-
-          <LinearProgressWithLabel
-            style={{ marginBottom: '0' }}
-            label='Temp'
-            offline={offline}
-            value={isFinite(record['cpu temp']) ? (record['cpu temp'] / 90) * 100 : 0}
-            displayValue={isFinite(record['cpu temp']) ? record['cpu temp'] : undefined}
-            displayUnits='°C'
-          />
-        </div>
-
-        <div style={{ flex: 1, margin: '10px 0' }}>
-          <LinearProgressWithLabel
-            label='SD'
-            offline={offline}
-            value={
-              isFinite(record['storage usage'] / record['storage total'])
-                ? (record['storage usage'] / record['storage total']) * 100
-                : 0
-            }
-            tooltip={
-              isFinite(record['storage usage'] / record['storage total'])
-                ? `Usage: ${record['storage usage']} MB of ${record['storage total']} MB`
-                : ''
-            }
-          />
-
-          <LinearProgressWithLabel
-            style={{ marginBottom: '0' }}
-            label='RAM'
-            offline={offline}
-            value={
-              isFinite(record['memory usage'] / record['memory total'])
-                ? (record['memory usage'] / record['memory total']) * 100
-                : 0
-            }
-            tooltip={
-              isFinite(record['memory usage'] / record['memory total'])
-                ? `Usage: ${record['memory usage']} MB of ${record['memory total']} MB`
-                : ''
-            }
-          />
-        </div>
-      </Box>
-    </>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        '& > *': { borderRight: 1, borderBottom: 1, borderColor: 'divider' },
+        borderTop: 1,
+        borderLeft: 1,
+        borderColor: 'divider',
+      }}
+    >
+      <Metric label='CPU' offline={offline} value={isFinite(record['cpu usage']) ? record['cpu usage'] : 0} />
+      <Metric
+        label='Temperature'
+        offline={offline}
+        value={isFinite(record['cpu temp']) ? (record['cpu temp'] / 90) * 100 : 0}
+        display={isFinite(record['cpu temp']) ? `${record['cpu temp']}°C` : undefined}
+      />
+      <Metric
+        label='Storage'
+        offline={offline}
+        value={ratio(record['storage usage'], record['storage total'])}
+        detail={detail(record['storage usage'], record['storage total'])}
+      />
+      <Metric
+        label='Memory'
+        offline={offline}
+        value={ratio(record['memory usage'], record['memory total'])}
+        detail={detail(record['memory usage'], record['memory total'])}
+      />
+    </Box>
   );
 };
 

@@ -1,6 +1,7 @@
 import { HttpError } from 'react-admin';
 import type { HttpClient } from './odataDataProvider';
 import { withPermissionHint } from '../lib/httpErrorMessage';
+import { serverUrl } from '../lib/serverUrl';
 
 export const withPermissionHints =
   (httpClient: HttpClient): HttpClient =>
@@ -14,3 +15,9 @@ export const withPermissionHints =
       throw error;
     }
   };
+
+/** Sends root-relative requests ("/admin-db/...") to the Vector server; absolute URLs pass through untouched. */
+export const withServerBase =
+  (httpClient: HttpClient): HttpClient =>
+  (url, options) =>
+    httpClient(url.startsWith('/') && !url.startsWith('//') ? serverUrl(url) : url, options);

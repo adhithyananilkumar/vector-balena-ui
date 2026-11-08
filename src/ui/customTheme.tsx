@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import ListEmpty from '../vector/components/list-empty';
 import {
   LinearProgress,
@@ -9,6 +10,11 @@ import {
   css,
   responsiveFontSizes,
 } from '@mui/material';
+
+/** Chevron for select inputs, replacing Material's filled triangle. MUI supplies the className (rotation, colour). */
+const SelectChevron: React.FC<{ className?: string }> = ({ className }) => (
+  <ChevronDown className={className} size={16} strokeWidth={2} aria-hidden />
+);
 
 const buttonBase = {
   defaultProps: {
@@ -255,7 +261,7 @@ const createCustomTheme = (mode: PaletteMode) => {
               padding: 0 !important;
             }
 
-            /* Save / Delete stay reachable at the bottom of the sheet */
+            /* footer stays reachable: Save on the right, a destructive action quietly on the left */
             .RaToolbar-desktopToolbar,
             .RaToolbar-mobileToolbar,
             .MuiToolbar-root.RaToolbar-desktopToolbar {
@@ -263,13 +269,89 @@ const createCustomTheme = (mode: PaletteMode) => {
               bottom: 0;
               z-index: 2;
               display: flex;
+              flex-direction: row-reverse;
+              align-items: center;
+              justify-content: space-between !important;
               gap: 12px;
-              justify-content: flex-start !important;
               padding: 14px 24px !important;
-              margin: 24px -24px -24px !important;
+              margin: 24px -24px 0 !important;
               min-height: 0 !important;
-              background: ${theme.palette.background.paper} !important;
+              background-color: ${theme.palette.background.paper} !important;
+              background-image: linear-gradient(${isDark ? 'rgba(255,255,255,0.025)' : 'rgba(9,9,11,0.025)'}, ${
+                isDark ? 'rgba(255,255,255,0.025)' : 'rgba(9,9,11,0.025)'
+              }) !important;
               border-top: 1px solid ${theme.palette.divider};
+
+              > * {
+                flex: 0 0 auto !important;
+                width: auto !important;
+              }
+            }
+
+            /* Save and Delete often share one wrapper: spread them to opposite ends */
+            [class*='RaToolbar'] > :has(> [class*='MuiButton-colorError']) {
+              display: flex !important;
+              flex-direction: row-reverse;
+              justify-content: space-between !important;
+              width: 100% !important;
+              gap: 12px;
+            }
+
+            button[type='submit'] {
+              min-width: 128px;
+              height: 40px;
+              background: ${theme.palette.secondary.main} !important;
+              color: ${isDark ? '#041318' : '#ffffff'} !important;
+              font-weight: 600;
+              &:hover {
+                filter: brightness(1.08);
+              }
+              &.Mui-disabled {
+                background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(9,9,11,0.08)'} !important;
+                color: ${theme.palette.text.disabled} !important;
+              }
+            }
+
+            /* fields: roomier, clearer focus, calmer labels */
+            .MuiOutlinedInput-root {
+              height: 42px;
+              background: ${isDark ? 'rgba(255,255,255,0.03)' : '#fafafa'};
+              transition: background-color 0.15s ease, box-shadow 0.15s ease;
+              &.Mui-focused {
+                background: ${theme.palette.background.paper};
+                box-shadow: 0 0 0 3px color-mix(in oklab, ${theme.palette.secondary.main} 22%, transparent);
+              }
+              &.Mui-disabled {
+                background: ${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(9,9,11,0.035)'};
+                input {
+                  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+                  font-size: 12.5px;
+                  -webkit-text-fill-color: ${theme.palette.text.secondary};
+                }
+              }
+            }
+            .MuiInputLabel-root {
+              margin-bottom: 8px;
+            }
+            /* toggles sit in their own bordered cells */
+            .MuiFormControlLabel-root {
+              margin: 0 !important;
+              padding: 10px 14px;
+              border: 1px solid ${theme.palette.divider};
+              justify-content: space-between;
+              flex-direction: row-reverse;
+              width: 100%;
+            }
+
+            [class*='MuiButton-colorError'] {
+              background: transparent !important;
+              color: ${theme.palette.error.main} !important;
+              border: 1px solid transparent !important;
+
+              &:hover {
+                background: ${theme.palette.error.main}1f !important;
+                border-color: ${theme.palette.error.main}66 !important;
+              }
             }
           }
 
@@ -304,11 +386,13 @@ const createCustomTheme = (mode: PaletteMode) => {
             }
           }
 
+          /* fits exactly between the top bar and the page padding, so an empty list never scrolls */
           .RaList-noResults {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            height: 100vh;
+            height: auto;
+            min-height: calc(100vh - 104px);
           }
 
           .RaBulkActionsToolbar-toolbar {
@@ -413,6 +497,158 @@ const createCustomTheme = (mode: PaletteMode) => {
               margin-bottom: 1.5px !important;
               outline: none !important;
             }
+          }
+
+          /* ---------- lists ---------- */
+          /* list content sits directly on the page: no container box behind rows or cards */
+          .RaList-content {
+            box-shadow: none !important;
+            background: transparent !important;
+            border: 0 !important;
+            overflow: visible !important;
+          }
+          .RaList-content > .MuiToolbar-root {
+            background: transparent !important;
+          }
+          .RaList-main > .MuiPaper-root,
+          .RaList-main > div > .MuiPaper-root {
+            background: transparent;
+            border: 0;
+          }
+
+          .RaDatagrid-tableWrapper table {
+            font-size: 13.5px;
+          }
+
+          .RaDatagrid-tableWrapper tbody td {
+            padding-top: 14px;
+            padding-bottom: 14px;
+            border-bottom-color: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(9,9,11,0.06)'};
+          }
+          .RaDatagrid-tableWrapper thead th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+          }
+          .RaDatagrid-tableWrapper tbody tr {
+            transition: background-color 0.12s ease;
+          }
+          .RaDatagrid-tableWrapper tbody tr:hover {
+            background-color: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(9,9,11,0.025)'} !important;
+          }
+          /* yes / no cells read as colour, not as heavy black marks */
+          .RaDatagrid-tableWrapper svg[data-testid='DoneIcon'] {
+            color: ${theme.palette.success.main};
+            font-size: 18px;
+          }
+          .RaDatagrid-tableWrapper svg[data-testid='ClearIcon'],
+          .RaDatagrid-tableWrapper svg[data-testid='CloseIcon'] {
+            color: ${theme.palette.text.disabled};
+            font-size: 16px;
+            opacity: 0.7;
+          }
+          /* links inside rows: no underline until hovered */
+          .RaDatagrid-tableWrapper a {
+            text-decoration: none;
+            font-weight: 500;
+          }
+          .RaList-content > .MuiToolbar-root {
+            border-bottom: 1px solid ${theme.palette.divider};
+            padding: 8px 16px !important;
+          }
+
+          /* first column reads as the row's name */
+          .RaDatagrid-tableWrapper tbody td:nth-of-type(2),
+          .RaDatagrid-tableWrapper tbody td.column-name {
+            font-weight: 500;
+          }
+
+          /* selection boxes only show on hover, focus or when ticked */
+          .RaDatagrid-tableWrapper tbody .MuiCheckbox-root:not(.Mui-checked) {
+            opacity: 0;
+            transition: opacity 0.12s ease;
+          }
+          .RaDatagrid-tableWrapper tbody tr:hover .MuiCheckbox-root,
+          .RaDatagrid-tableWrapper tbody tr:focus-within .MuiCheckbox-root {
+            opacity: 1;
+          }
+
+          /* row actions stay quiet until the row is hovered */
+          .RaDatagrid-tableWrapper td .MuiButton-outlined,
+          .RaDatagrid-tableWrapper td .MuiButton-text {
+            border-color: transparent !important;
+            background: transparent !important;
+            color: ${theme.palette.text.secondary} !important;
+            opacity: 0.55;
+            transition: opacity 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+          }
+          .RaDatagrid-tableWrapper tr:hover td .MuiButton-outlined,
+          .RaDatagrid-tableWrapper tr:hover td .MuiButton-text {
+            opacity: 1;
+          }
+          .RaDatagrid-tableWrapper td .MuiButton-outlined:hover,
+          .RaDatagrid-tableWrapper td .MuiButton-text:hover {
+            background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(9,9,11,0.06)'} !important;
+            color: ${theme.palette.text.primary} !important;
+          }
+          .RaDatagrid-tableWrapper td [class*='MuiButton-colorError']:hover {
+            color: ${theme.palette.error.main} !important;
+            background: ${theme.palette.error.main}1f !important;
+          }
+
+          /* list toolbar: Create stays primary, everything else is quiet */
+          .RaList-actions .MuiButton-root {
+            height: 34px;
+          }
+          .RaList-actions button.MuiButton-root {
+            background: transparent !important;
+            color: ${theme.palette.text.primary} !important;
+            border: 1px solid ${isDark ? 'rgba(255,255,255,0.14)' : 'rgba(9,9,11,0.2)'} !important;
+          }
+          .RaList-actions button.MuiButton-root:hover {
+            background: ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(9,9,11,0.05)'} !important;
+          }
+
+          /* pagination footer */
+          .MuiTablePagination-root {
+            color: ${theme.palette.text.secondary};
+            border-top: 1px solid ${theme.palette.divider};
+            font-size: 12px;
+          }
+          .MuiTablePagination-toolbar {
+            min-height: 48px !important;
+            padding-left: 16px !important;
+            padding-right: 8px !important;
+          }
+          .MuiTablePagination-selectLabel,
+          .MuiTablePagination-displayedRows {
+            margin: 0 !important;
+            font-size: 12px !important;
+          }
+          .MuiTablePagination-select {
+            font-size: 12px !important;
+          }
+
+          /* ---------- content views ---------- */
+          .RaLabeled-label,
+          .RaLabeled-root > .MuiTypography-root:first-of-type {
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: ${theme.palette.text.secondary} !important;
+          }
+
+          .MuiCardHeader-root {
+            padding: 14px 20px !important;
+            border-bottom: 1px solid ${theme.palette.divider};
+          }
+          .MuiCardHeader-title {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.005em;
+          }
+          .MuiCardContent-root:last-child {
+            padding-bottom: 20px;
           }
         `.styles,
       },
@@ -533,9 +769,12 @@ const createCustomTheme = (mode: PaletteMode) => {
             display: 'block',
             position: 'unset',
             lineHeight: 1,
-            fontSize: 13,
-            color: theme.palette.text.primary,
-            marginBottom: 6,
+            fontSize: 12,
+            letterSpacing: '0.01em',
+            color: theme.palette.text.secondary,
+            marginBottom: 7,
+            '&.Mui-focused': { color: theme.palette.text.primary },
+            '.MuiFormLabel-asterisk': { color: theme.palette.text.disabled },
           },
         },
       },
@@ -551,14 +790,27 @@ const createCustomTheme = (mode: PaletteMode) => {
         styleOverrides: {
           notchedOutline: {
             borderWidth: '1px !important',
-            borderColor: theme.palette.text.disabled,
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(9, 9, 11, 0.2)',
+            transition: 'border-color 0.15s ease',
           },
           root: {
             'borderRadius': 0,
             'height': 40,
             'fontSize': 14,
             'lineHeight': 1,
-            'background': theme.palette.background.paper,
+            'background': isDark ? 'rgba(255, 255, 255, 0.025)' : '#ffffff',
+
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(9, 9, 11, 0.4)',
+            },
+
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: `${theme.palette.primary.main} !important`,
+            },
+
+            '&.Mui-disabled': {
+              background: isDark ? 'rgba(255, 255, 255, 0.015)' : 'rgba(9, 9, 11, 0.03)',
+            },
 
             '&.MuiInputBase-multiline': {
               height: 'auto',
@@ -623,9 +875,22 @@ const createCustomTheme = (mode: PaletteMode) => {
         },
       },
 
+      MuiCheckbox: {
+        defaultProps: { size: 'small', disableRipple: true },
+        styleOverrides: {
+          root: {
+            'padding': 6,
+            'borderRadius': 0,
+            'color': isDark ? 'rgba(255, 255, 255, 0.32)' : 'rgba(9, 9, 11, 0.38)',
+            '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: theme.palette.primary.main },
+          },
+        },
+      },
+
       MuiSelect: {
         defaultProps: {
           size: 'medium',
+          IconComponent: SelectChevron,
         },
         styleOverrides: {
           select: {
@@ -643,11 +908,54 @@ const createCustomTheme = (mode: PaletteMode) => {
             '&.Mui-selected': {
               background: `${menuItemSelected}!important`,
             },
+            'fontSize': 13,
+            'minHeight': 34,
             '&[role="option"]': {
-              paddingTop: 12,
-              paddingBottom: 12,
+              paddingTop: 7,
+              paddingBottom: 7,
+              paddingLeft: 12,
+              paddingRight: 12,
             },
           },
+        },
+      },
+
+      // dropdown panels: square, bordered, capped so long lists scroll instead of filling the screen
+      MuiPopover: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 0,
+            maxHeight: 'min(360px, 60vh)',
+          },
+        },
+      },
+
+      // square toggles that match the rest of the UI
+      MuiSwitch: {
+        styleOverrides: {
+          root: { width: 36, height: 20, padding: 0, overflow: 'visible' },
+          switchBase: {
+            'padding': 2,
+            'color': isDark ? '#d4d4d8' : '#ffffff',
+            '&.Mui-checked': {
+              'transform': 'translateX(16px)',
+              'color': isDark ? '#041318' : '#ffffff',
+              '& + .MuiSwitch-track': { backgroundColor: theme.palette.primary.main, opacity: 1 },
+            },
+          },
+          thumb: { width: 16, height: 16, borderRadius: 0, boxShadow: 'none' },
+          track: {
+            borderRadius: 0,
+            opacity: 1,
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(9, 9, 11, 0.28)',
+          },
+        },
+      },
+
+      MuiFormControlLabel: {
+        styleOverrides: {
+          root: { marginLeft: 0, marginRight: 24, gap: 8 },
+          label: { fontSize: 13 },
         },
       },
 
@@ -673,18 +981,20 @@ const createCustomTheme = (mode: PaletteMode) => {
             'borderColor': theme.palette.divider,
 
             'th': {
-              textTransform: 'uppercase',
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
+              textTransform: 'none',
+              fontSize: '12px',
+              fontWeight: 500,
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap',
               color: theme.palette.text.secondary,
-              backgroundColor: `${cardHeaderBackground}!important`,
+              backgroundColor: 'transparent !important',
+              borderBottom: `1px solid ${theme.palette.divider}`,
             },
 
             'th, td': {
               border: 'none',
               borderBottom: `1px solid ${theme.palette.divider}`,
-              padding: '10px 16px',
+              padding: '14px 16px',
             },
 
             'tbody tr:last-of-type td': {

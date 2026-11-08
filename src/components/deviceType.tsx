@@ -1,3 +1,4 @@
+import { ArchitectureOption, FamilyOption, BrandSlugField } from '../vector/components/brands';
 import * as React from 'react';
 import {
   Create,
@@ -33,11 +34,11 @@ export const DeviceTypeList: React.FC = () => {
   return (
     <List actions={canManage ? undefined : false}>
       <Datagrid size='medium' rowClick={false} bulkActionButtons={canManage ? undefined : false}>
-        <TextField label='Slug' source='slug' />
+        <BrandSlugField label='Slug' source='slug' kind='board' />
         <TextField label='Name' source='name' />
 
         <ReferenceField label='CPU Architecture' source='is of-cpu architecture' reference='cpu architecture'>
-          <TextField source='slug' />
+          <BrandSlugField source='slug' kind='arch' />
         </ReferenceField>
 
         {deviceTypeAlias ? (
@@ -51,7 +52,7 @@ export const DeviceTypeList: React.FC = () => {
         )}
 
         <ReferenceField label='Device Family' source='belongs to-device family' reference='device family'>
-          <TextField source='slug' />
+          <BrandSlugField source='slug' kind='board' />
         </ReferenceField>
 
         {canManage ? (
@@ -85,7 +86,7 @@ export const DeviceTypeCreate: React.FC = () => {
             perPage={1000}
             sort={{ field: 'slug', order: 'ASC' }}
           >
-            <SelectInput optionText='slug' optionValue='id' validate={required()} />
+            <SelectInput optionText={<ArchitectureOption />} optionValue='id' validate={required()} />
           </ReferenceInput>
 
           <ReferenceInput
@@ -97,7 +98,7 @@ export const DeviceTypeCreate: React.FC = () => {
             sort={{ field: 'slug', order: 'ASC' }}
             allowEmpty
           >
-            <SelectInput optionText='slug' optionValue='id' />
+            <SelectInput optionText={<FamilyOption />} optionValue='id' />
           </ReferenceInput>
         </Row>
       </SimpleForm>
@@ -122,7 +123,7 @@ export const DeviceTypeEdit: React.FC = () => (
           perPage={1000}
           sort={{ field: 'slug', order: 'ASC' }}
         >
-          <SelectInput optionText='slug' optionValue='id' validate={required()} />
+          <SelectInput optionText={<ArchitectureOption />} optionValue='id' validate={required()} />
         </ReferenceInput>
 
         <ReferenceInput
@@ -134,7 +135,7 @@ export const DeviceTypeEdit: React.FC = () => (
           sort={{ field: 'slug', order: 'ASC' }}
           allowEmpty
         >
-          <SelectInput optionText='slug' optionValue='id' />
+          <SelectInput optionText={<FamilyOption />} optionValue='id' />
         </ReferenceInput>
       </Row>
     </SimpleForm>

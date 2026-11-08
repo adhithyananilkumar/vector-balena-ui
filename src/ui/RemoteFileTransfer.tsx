@@ -3,7 +3,12 @@ import UploadIcon from '@mui/icons-material/Upload';
 import { Alert, Box, Button, LinearProgress, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import React from 'react';
 import { remoteTransferUrl, responseError, type RemoteTarget } from '../lib/builtInRemoteAccess';
-import { isAbsoluteDevicePath, isTransferCancellation, transferFilename } from '../lib/remoteAccessUi';
+import {
+  formatTransferBytes,
+  isAbsoluteDevicePath,
+  isTransferCancellation,
+  transferFilename,
+} from '../lib/remoteAccessUi';
 import { RemoteTargetSelect } from './RemoteTargetSelect';
 
 interface SaveHandle {
@@ -32,6 +37,7 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
   const [bytes, setBytes] = React.useState(0);
   const [error, setError] = React.useState('');
   const [message, setMessage] = React.useState('');
+  const [dragging, setDragging] = React.useState(false);
   const operation = React.useRef<AbortController | undefined>(undefined);
   React.useEffect(
     () => () => {
@@ -167,14 +173,27 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
   };
   const path = mode === 'upload' ? uploadPath : downloadPath;
   const invalid = !!path && !isAbsoluteDevicePath(path);
+  const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
   return (
-    <Box sx={{ borderTop: 1, borderColor: 'divider', px: 2, pb: 1.5, flexShrink: 0 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={1} sx={{ pt: 1 }}>
+    <Box
+      sx={{ borderTop: 1, borderColor: 'divider', bgcolor: '#0e131a', color: '#dbe4ee', px: 2.5, pt: 2, pb: 2.5, flexShrink: 0 }}
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={1.5}>
         <Stack direction='row' alignItems='center' spacing={2} sx={{ flex: 1 }}>
-          <Typography variant='subtitle2'>File transfer</Typography>
-          <Tabs value={mode} onChange={(_, value: 'upload' | 'download') => setMode(value)} sx={{ minHeight: 40 }}>
-            <Tab value='upload' label='Upload' disabled={active} sx={{ minHeight: 40, py: 1 }} />
-            <Tab value='download' label='Download' disabled={active} sx={{ minHeight: 40, py: 1 }} />
+          <Typography sx={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.02em' }}>File transfer</Typography>
+          <Tabs
+            value={mode}
+            onChange={(_, value: 'upload' | 'download') => setMode(value)}
+            sx={{
+              'minHeight': 32,
+              'bgcolor': 'rgba(255,255,255,0.05)',
+              'borderRadius': '8px',
+              'p': '3px',
+              '& .MuiTabs-indicator': { display: 'none' },
+            }}
+          >
+            <Tab value='upload' label='Upload' disabled={active} sx={tabSx} />
+            <Tab value='download' label='Download' disabled={active} sx={tabSx} />
           </Tabs>
         </Stack>
         <RemoteTargetSelect
@@ -195,21 +214,68 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
         />
       </Stack>
       {!selected && !active && (
-        <Alert severity='warning'>The selected target is no longer running. Choose another target.</Alert>
+        <Alert severity='warning' sx={{ mt: 1.5 }}>
+          The selected target is no longer running. Choose another target.
+        </Alert>
       )}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'flex-end' }} sx={{ mt: 1 }}>
-        {mode === 'upload' && (
-          <Button
-            component='label'
-            size='small'
-            variant='outlined'
-            disabled={active}
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+      {mode === 'upload' && (
+        <Box
+          component='label'
+          onDragOver={(event: React.DragEvent) => {
+            event.preventDefault();
+            if (!active) setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event: React.DragEvent) => {
+            event.preventDefault();
+            setDragging(false);
+            const dropped = event.dataTransfer?.files?.[0];
+            if (!active && dropped) setFile(dropped);
+          }}
+          sx={{
+            'mt': 1.75,
+            'display': 'flex',
+            'alignItems': 'center',
+            'gap': 1.5,
+            'px': 2,
+            'py': 1.75,
+            'borderRadius': '10px',
+            'border': '1.5px dashed',
+            'borderColor': dragging ? '#22d3ee' : file ? 'rgba(104,211,145,0.55)' : 'rgba(255,255,255,0.18)',
+            'bgcolor': dragging ? 'rgba(34,211,238,0.08)' : 'rgba(255,255,255,0.03)',
+            'cursor': active ? 'default' : 'pointer',
+            'transition': 'border-color .15s, background-color .15s',
+            '&:hover': { borderColor: active ? undefined : 'rgba(255,255,255,0.35)' },
+          }}
+        >
+          <input type='file' hidden disabled={active} onChange={(event) => setFile(event.target.files?.[0])} />
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '8px',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: 'rgba(34,211,238,0.12)',
+              color: '#22d3ee',
+              flexShrink: 0,
+            }}
           >
-            Choose file
-            <input type='file' hidden onChange={(event) => setFile(event.target.files?.[0])} />
-          </Button>
-        )}
+            <UploadIcon fontSize='small' />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontSize: 13.5, fontWeight: 600, overflowWrap: 'anywhere' }}>
+              {file ? file.name : 'Drop a file here, or click to choose'}
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: '#8da0b3' }}>
+              {file
+                ? `${formatTransferBytes(file.size)} · click to replace`
+                : 'Streamed straight to the device; nothing is stored on the server'}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'flex-start' }} sx={{ mt: 1.75 }}>
         <TextField
           size='small'
           fullWidth
@@ -219,15 +285,19 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
           disabled={active}
           error={invalid}
           helperText={invalid ? 'Enter an absolute path starting with /' : undefined}
-          sx={{ 'minWidth': 0, '& .MuiFormLabel-root': { fontSize: 12, fontWeight: 500 } }}
+          sx={{
+            'minWidth': 0,
+            '& .MuiFormLabel-root': { fontSize: 12, fontWeight: 500 },
+            '& .MuiInputBase-input': { fontFamily: mono, fontSize: 13 },
+          }}
           onChange={(event) =>
             mode === 'upload' ? setUploadPath(event.target.value) : setDownloadPath(event.target.value)
           }
         />
         <Button
-          size='small'
+          size='medium'
           variant='contained'
-          sx={{ flexShrink: 0 }}
+          sx={{ flexShrink: 0, height: 40, px: 2.5, borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
           startIcon={mode === 'upload' ? <UploadIcon /> : <DownloadIcon />}
           disabled={
             active || !token || !deviceUuid || !selected || !isAbsoluteDevicePath(path) || (mode === 'upload' && !file)
@@ -238,8 +308,9 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
         </Button>
         {active && (
           <Button
-            size='small'
+            size='medium'
             color='warning'
+            sx={{ flexShrink: 0, height: 40, textTransform: 'none' }}
             onClick={() => {
               operation.current?.abort();
               setMessage('Transfer cancelled.');
@@ -249,38 +320,49 @@ export const RemoteFileTransfer: React.FC<Props> = ({ token, deviceUuid, targets
           </Button>
         )}
       </Stack>
-      {mode === 'upload' && file && (
-        <Typography
-          variant='caption'
-          color='text.secondary'
-          sx={{ display: 'block', mt: 0.5, overflowWrap: 'anywhere' }}
-        >
-          {file.name} · {file.size.toLocaleString()} bytes
-        </Typography>
-      )}
       {active && (
-        <Box sx={{ mt: 1 }}>
-          <LinearProgress variant={progress == null ? 'indeterminate' : 'determinate'} value={progress} />
-          <Typography variant='caption' color='text.secondary'>
-            {bytes.toLocaleString()} bytes transferred{progress == null ? '' : ` · ${Math.round(progress)}%`}
-          </Typography>
+        <Box sx={{ mt: 1.75 }}>
+          <LinearProgress
+            variant={progress == null ? 'indeterminate' : 'determinate'}
+            value={progress}
+            sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.08)' }}
+          />
+          <Stack direction='row' justifyContent='space-between' sx={{ mt: 0.75 }}>
+            <Typography sx={{ fontSize: 12, color: '#8da0b3', fontFamily: mono }}>
+              {formatTransferBytes(bytes)} transferred
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: '#dbe4ee', fontFamily: mono }}>
+              {progress == null ? '…' : `${Math.round(progress)}%`}
+            </Typography>
+          </Stack>
         </Box>
       )}
       {mode === 'download' && !(globalThis as typeof globalThis & Picker).showSaveFilePicker && (
-        <Typography variant='caption' color='text.secondary'>
+        <Typography sx={{ display: 'block', mt: 1, fontSize: 12, color: '#8da0b3' }}>
           This browser saves downloads after receiving the file in browser memory.
         </Typography>
       )}
       {error && (
-        <Alert severity='error' sx={{ mt: 1 }}>
+        <Alert severity='error' sx={{ mt: 1.5 }}>
           {error}
         </Alert>
       )}
-      {message && (
-        <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 1 }}>
+      {message && !error && (
+        <Typography sx={{ display: 'block', mt: 1.5, fontSize: 12.5, color: '#68d391', overflowWrap: 'anywhere' }}>
           {message}
         </Typography>
       )}
     </Box>
   );
+};
+
+const tabSx = {
+  'minHeight': 26,
+  'py': 0.25,
+  'px': 1.75,
+  'borderRadius': '6px',
+  'fontSize': 12.5,
+  'textTransform': 'none',
+  'color': '#8da0b3',
+  '&.Mui-selected': { color: '#fff', bgcolor: 'rgba(255,255,255,0.12)' },
 };

@@ -58,8 +58,9 @@ const env = {
   get REACT_APP_BANNER_IMAGE() {
     return readEnv('REACT_APP_BANNER_IMAGE');
   },
-  get REACT_APP_OPEN_BALENA_UI_URL() {
-    return readEnv('REACT_APP_OPEN_BALENA_UI_URL');
+  /** Address of the Vector server (the API behind this UI). Empty means the same origin as the UI. */
+  get REACT_APP_VECTOR_SERVER_URL() {
+    return readEnv('REACT_APP_VECTOR_SERVER_URL');
   },
   get REACT_APP_OPEN_BALENA_UI_VERSION() {
     return readEnv('REACT_APP_OPEN_BALENA_UI_VERSION');

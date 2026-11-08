@@ -13,6 +13,7 @@ import { EmptyState } from '../components/empty-state';
 import { VxScope } from '../components/scope';
 import { Skeleton } from '../components/skeleton';
 import { cn } from '../lib/utils';
+import { serverUrl } from '../../lib/serverUrl';
 
 type DeviceState = 'online' | 'offline' | 'updating' | 'degraded' | 'failed';
 type Probe = 'checking' | 'ok' | 'down';
@@ -151,7 +152,7 @@ const Home: React.FC = () => {
   const releases = useGetList('release', { pagination: { page: 1, perPage: 1 }, sort: { field: 'id', order: 'DESC' } }, live);
 
   const apiProbe = useProbe(`${environment.REACT_APP_OPEN_BALENA_API_URL}/ping`);
-  const adminProbe = useProbe('/admin-db/actions/access-context', authHeaders);
+  const adminProbe = useProbe(serverUrl('/admin-db/actions/access-context'), authHeaders);
 
   const userFleets = useMemo(() => (fleets.data ?? []).filter((fleet) => !fleet['is host']), [fleets.data]);
   const deviceRows = useMemo(() => (devices.data ?? []).map((device) => ({ device, state: classifyDevice(device) })), [devices.data]);
@@ -182,7 +183,7 @@ const Home: React.FC = () => {
   const stepsDone = steps.filter((step) => step.done).length;
 
   return (
-    <VxScope className='mx-auto w-full max-w-[1400px] pb-6'>
+    <VxScope className='w-full pb-6'>
       <Title title='Overview' />
 
       {/* hero */}

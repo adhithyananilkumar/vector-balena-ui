@@ -1,7 +1,7 @@
 import { useAuthProvider, useDataProvider } from 'react-admin';
 import axios from 'axios';
 import { deleteAllRelated } from './delete';
-import environment from './reactAppEnv';
+import { serverUrl } from './serverUrl';
 
 export function useDeleteImage() {
   const dataProvider = useDataProvider();
@@ -37,7 +37,7 @@ export function useDeleteImage() {
       throw new Error('Unable to delete image without a valid session');
     }
     const response = await axios.post(
-      `${environment.REACT_APP_OPEN_BALENA_UI_URL}/deleteRegistryImage`,
+      serverUrl('/deleteRegistryImage'),
       { imageLocationHash },
       { headers: { Authorization: `Bearer ${session.jwt}` } },
     );

@@ -1,3 +1,4 @@
+import { DeviceTypeOption, BrandSlugField } from '../vector/components/brands';
 import * as React from 'react';
 import {
   BooleanField,
@@ -30,6 +31,7 @@ import SwitchAccessShortcutIcon from '@mui/icons-material/SwitchAccessShortcut';
 import { useParams } from 'react-router';
 import { v4 as uuidv4 } from 'uuid';
 import DeleteFleetButton from '../ui/DeleteFleetButton';
+import FleetCards from '../ui/FleetCards';
 import Row from '../ui/Row';
 import SemVerChip, { getSemver } from '../ui/SemVerChip';
 import { fleetPinField, resolveFleetTargetRelease } from '../lib/targetRelease';
@@ -80,61 +82,11 @@ const CustomBulkActionButtons: React.FC = (props) => (
   </React.Fragment>
 );
 
-export const FleetList: React.FC = () => {
-  const { context } = useAdminAccessContext();
-  const canEditOrganizations =
-    context != null && (!context.enforcementEnabled || context.globalAdmin || context.organizationAdmin);
-
-  return (
-    <List>
-      <Datagrid
-        bulkActionButtons={<CustomBulkActionButtons />}
-        rowClick={false}
-        size='medium'
-        sx={{
-          '.column-is, .column-should.track.latest.release': {
-            textAlign: 'center',
-          },
-          '.column-is.for-device.type': {
-            textAlign: 'left',
-          },
-        }}
-      >
-        <TextField label='Name' source='app name' />
-
-        <ReferenceField
-          label='Organization'
-          source='organization'
-          reference='organization'
-          link={canEditOrganizations ? undefined : false}
-        >
-          <TextField source='name' />
-        </ReferenceField>
-
-        <TextField label='Slug' source='slug' />
-
-        <ReferenceField label='Device Type' source='is for-device type' reference='device type'>
-          <TextField source='slug' />
-        </ReferenceField>
-
-        <FunctionField label='Target Rel.' render={(record) => <FleetTargetReleaseCell record={record} />} />
-
-        <BooleanField label='Host' source='is host' />
-
-        <BooleanField label='Archived' source='is archived' />
-
-        <BooleanField label='Public' source='is public' />
-
-        <BooleanField label='Track Latest Rel.' source='should track latest release' />
-
-        <Toolbar>
-          <EditButton label='' size='small' variant='outlined' />
-          <DeleteFleetButton size='small' variant='outlined' />
-        </Toolbar>
-      </Datagrid>
-    </List>
-  );
-};
+export const FleetList: React.FC = () => (
+  <List perPage={24} pagination={false} sort={{ field: 'app name', order: 'ASC' }}>
+    <FleetCards />
+  </List>
+);
 
 export const FleetCreate: React.FC<CreateProps> = (props) => {
   const unique = useUnique();
@@ -190,7 +142,7 @@ export const FleetCreate: React.FC<CreateProps> = (props) => {
             perPage={1000}
             sort={{ field: 'slug', order: 'ASC' }}
           >
-            <SelectInput optionText='slug' optionValue='id' validate={required()} />
+            <SelectInput optionText={<DeviceTypeOption />} optionValue='id' validate={required()} />
           </ReferenceInput>
 
           <ReferenceInput
@@ -295,7 +247,7 @@ export const FleetEdit: React.FC = () => {
             perPage={1000}
             sort={{ field: 'slug', order: 'ASC' }}
           >
-            <SelectInput optionText='slug' optionValue='id' validate={required()} />
+            <SelectInput optionText={<DeviceTypeOption />} optionValue='id' validate={required()} />
           </ReferenceInput>
           <ReferenceInput
             label='Organization'

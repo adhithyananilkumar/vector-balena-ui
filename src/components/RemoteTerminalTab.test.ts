@@ -139,6 +139,7 @@ const terminalHarness = () => {
     '@mui/material': Object.fromEntries(['Alert', 'Box', 'Button', 'Stack', 'Typography'].map((name) => [name, name])),
     '../lib/builtInRemoteAccess': builtInRemoteAccess,
     '../lib/remoteAccessUi': remoteAccessUi,
+    '../lib/serverUrl': { serverUrl: (path: string) => path },
     './RemoteTargetSelect': { RemoteTargetSelect: 'RemoteTargetSelect' },
   };
   const exports: Record<string, any> = {};

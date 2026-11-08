@@ -1,0 +1,644 @@
+{
+ "advantech-ecu1370": {
+  "name": "Advantech ECU1370",
+  "logo": true
+ },
+ "aio-3288c": {
+  "name": "AIO 3288C",
+  "aliases": [
+   "aio-3288c"
+  ],
+  "logo": true
+ },
+ "am571x-evm": {
+  "name": "AM571X EVM",
+  "logo": true
+ },
+ "apalis-imx6q": {
+  "name": "Apalis iMX6q",
+  "aliases": [
+   "apalis-imx6"
+  ],
+  "logo": true
+ },
+ "artik10": {
+  "name": "Samsung Artik 10",
+  "logo": true
+ },
+ "artik5": {
+  "name": "Samsung Artik 520",
+  "aliases": [
+   "artik520"
+  ],
+  "logo": true
+ },
+ "artik530": {
+  "name": "Samsung Artik 530",
+  "logo": true
+ },
+ "artik533s": {
+  "name": "Samsung Artik 530s 1G",
+  "logo": true
+ },
+ "artik710": {
+  "name": "Samsung Artik 710",
+  "logo": true
+ },
+ "astro-tx2": {
+  "name": "CTI Astro TX2 G+",
+  "logo": true
+ },
+ "asus-tinker-board": {
+  "name": "Asus Tinker Board",
+  "logo": true
+ },
+ "asus-tinker-board-s": {
+  "name": "Asus Tinker Board S",
+  "logo": true
+ },
+ "asus-tinker-edge-t": {
+  "name": "ASUS Tinker Edge T",
+  "logo": true
+ },
+ "bananapi-m1-plus": {
+  "name": "BananaPi-M1+",
+  "logo": true
+ },
+ "beagleboard-xm": {
+  "name": "BeagleBoard-XM",
+  "logo": true
+ },
+ "beaglebone-ai64": {
+  "name": "BeagleBone AI64",
+  "aliases": [
+   "beaglebone-ai-64"
+  ],
+  "logo": true
+ },
+ "beaglebone-black": {
+  "name": "BeagleBone Black",
+  "aliases": [
+   "beaglebone"
+  ],
+  "logo": true
+ },
+ "beaglebone-green": {
+  "name": "BeagleBone Green",
+  "logo": true
+ },
+ "beaglebone-green-gateway": {
+  "name": "BeagleBone Green Gateway",
+  "logo": true
+ },
+ "beaglebone-green-wifi": {
+  "name": "BeagleBone Green Wireless",
+  "logo": true
+ },
+ "beaglebone-pocket": {
+  "name": "PocketBeagle",
+  "logo": true
+ },
+ "beagleplay": {
+  "name": "BeaglePlay",
+  "aliases": [
+   "beagleplay"
+  ],
+  "logo": true
+ },
+ "blackboard-tx2": {
+  "name": "Nvidia blackboard TX2",
+  "logo": true
+ },
+ "bluechiptechnology-db1": {
+  "name": "Blue Chip Technology DB1",
+  "logo": true
+ },
+ "bluechiptechnology-tm3": {
+  "name": "Blue Chip Technology TM3",
+  "logo": true
+ },
+ "ccimx8x-sbc-pro": {
+  "name": "Digi ConnectCore 8X SBC Pro",
+  "logo": true
+ },
+ "cl-som-imx8": {
+  "name": "Compulab MX8M",
+  "logo": true
+ },
+ "cnx100-xavier-nx": {
+  "name": "Auvidea CNX100 Xavier NX",
+  "logo": true
+ },
+ "colibri-imx6dl": {
+  "name": "Colibri iMX6dl",
+  "aliases": [
+   "colibri-imx6"
+  ],
+  "logo": true
+ },
+ "coral-dev": {
+  "name": "Coral Dev Board",
+  "logo": true
+ },
+ "cybertan-ze250": {
+  "name": "Cybertan ZE250",
+  "aliases": [],
+  "logo": true
+ },
+ "edge": {
+  "name": "Edge Device Builder",
+  "aliases": [
+   "edge"
+  ],
+  "logo": true
+ },
+ "edgeai-orn-nx": {
+  "name": "CompuLab EdgeAI-ORN NX 16GB",
+  "logo": true
+ },
+ "eg5120-imx8mp": {
+  "name": "Robustel EG5120 i.MX8MP",
+  "logo": true
+ },
+ "etcher-pro": {
+  "name": "Etcher Pro",
+  "logo": true
+ },
+ "fincm3": {
+  "name": "Balena Fin (CM3)",
+  "logo": true
+ },
+ "firefly-rk3288": {
+  "name": "FireFly rk3288",
+  "logo": true
+ },
+ "floyd-nano": {
+  "name": "Floyd Nano BB02A eMMC",
+  "logo": true
+ },
+ "forecr-dsb-nx2-xavier-nx-emmc": {
+  "name": "Forecr DSBOARD NX2 Xavier NX eMMC",
+  "logo": true
+ },
+ "forecr-dsb-ornx-lan-orin-nx-16gb": {
+  "name": "Forecr DSBOARD-ORNX-LAN Orin NX 16GB",
+  "logo": true
+ },
+ "forecr-dsb-ornx-orin-nano-8gb": {
+  "name": "Forecr DSBOARD-ORNX-LAN Orin Nano 8GB",
+  "logo": true
+ },
+ "generic": {
+  "name": "Generic",
+  "logo": true
+ },
+ "generic-aarch64": {
+  "name": "Generic AARCH64",
+  "logo": true
+ },
+ "generic-amd64": {
+  "name": "Generic x86_64 (GPT)",
+  "logo": true
+ },
+ "generic-armv7ahf": {
+  "name": "Generic ARMv7-a HF",
+  "logo": true
+ },
+ "genericx86-64-ext": {
+  "name": "Generic x86_64 (legacy MBR)",
+  "logo": true
+ },
+ "hummingboard": {
+  "name": "Hummingboard",
+  "aliases": [
+   "solidrun-imx6",
+   "cubox-i",
+   "hummingboard2"
+  ],
+  "logo": true
+ },
+ "imx6ul-var-dart": {
+  "name": "Variscite DART-6UL",
+  "logo": true
+ },
+ "imx7-var-som": {
+  "name": "Variscite VAR-SOM-MX7",
+  "logo": true
+ },
+ "imx8m-var-dart": {
+  "name": "Variscite DART-MX8M",
+  "logo": true
+ },
+ "imx8mm-lpddr4-evk": {
+  "name": "NXP i.MX8M Mini LPDDR4 EVK",
+  "logo": true
+ },
+ "imx8mm-var-dart": {
+  "name": "Variscite DART-MX8M Mini",
+  "logo": true
+ },
+ "imx8mm-var-som": {
+  "name": "Variscite VAR-SOM-MX8M-MINI Devkit",
+  "logo": true
+ },
+ "imx8mp-var-dart": {
+  "name": "Variscite DART-MX8M-PLUS",
+  "logo": true
+ },
+ "intel-edison": {
+  "name": "Intel Edison",
+  "aliases": [
+   "edison"
+  ],
+  "logo": true
+ },
+ "intel-nuc": {
+  "name": "Intel NUC",
+  "aliases": [
+   "nuc"
+  ],
+  "logo": true
+ },
+ "iot-gate-imx8": {
+  "name": "Compulab IOT-gate-imx8",
+  "logo": true
+ },
+ "iot-gate-imx8plus": {
+  "name": "Compulab IOT-GATE-iMX8PLUS 2GB or 4GB DRAM",
+  "logo": true
+ },
+ "iot-gate-imx8plus-d1d8": {
+  "name": "Compulab IOT-GATE-iMX8PLUS 1GB or 8GB DRAM",
+  "logo": true
+ },
+ "iot-link": {
+  "name": "Compulab IOT-LINK Gateway",
+  "logo": true
+ },
+ "iot2000": {
+  "name": "Siemens IOT2000",
+  "logo": true
+ },
+ "iotdin-imx8p": {
+  "name": "Compulab IOTDIN-iMX8P 2GB or 4GB DRAM",
+  "logo": true
+ },
+ "iotdin-imx8p-d1d8": {
+  "name": "Compulab IOTDIN-iMX8P 1GB or 8GB DRAM",
+  "logo": true
+ },
+ "iotg-rpi5": {
+  "name": "Compulab IOT-GATE-RPI5",
+  "logo": true
+ },
+ "isg-503": {
+  "name": "Rocktech ISG 503",
+  "logo": true
+ },
+ "jetson-agx-orin-devkit": {
+  "name": "Nvidia Jetson AGX Orin Devkit 32GB",
+  "logo": true
+ },
+ "jetson-agx-orin-devkit-64gb": {
+  "name": "Nvidia Jetson AGX Orin Devkit 64GB",
+  "logo": true
+ },
+ "jetson-agx-thor-devkit": {
+  "name": "Nvidia Jetson AGX Thor Developer Kit",
+  "logo": true
+ },
+ "jetson-nano": {
+  "name": "Nvidia Jetson Nano SD-CARD",
+  "logo": true
+ },
+ "jetson-nano-2gb-devkit": {
+  "name": "Nvidia Jetson Nano 2GB Devkit SD",
+  "logo": true
+ },
+ "jetson-nano-emmc": {
+  "name": "Nvidia Jetson Nano eMMC",
+  "logo": true
+ },
+ "jetson-orin-nano-devkit-nvme": {
+  "name": "Nvidia Jetson Orin Nano 8GB (SD) Devkit NVME",
+  "logo": true
+ },
+ "jetson-orin-nano-seeed-j3010": {
+  "name": "Seeed reComputer J3010 Jetson Orin Nano 4GB",
+  "logo": true
+ },
+ "jetson-orin-nx-seeed-j4012": {
+  "name": "Seeed reComputer J4012 (Classic) Jetson Orin NX 16GB",
+  "logo": true
+ },
+ "jetson-orin-nx-xavier-nx-devkit": {
+  "name": "Nvidia Jetson Orin NX 16GB in Xavier NX Devkit NVME",
+  "logo": true
+ },
+ "jetson-tx1": {
+  "name": "Nvidia Jetson TX1",
+  "logo": true
+ },
+ "jetson-tx2": {
+  "name": "Nvidia Jetson TX2",
+  "logo": true
+ },
+ "jetson-tx2-nx-devkit": {
+  "name": "Nvidia Jetson TX2 NX (with Xavier NX Devkit)",
+  "logo": true
+ },
+ "jetson-xavier": {
+  "name": "Nvidia Jetson Xavier",
+  "logo": true
+ },
+ "jetson-xavier-nx-devkit": {
+  "name": "Nvidia Jetson Xavier NX Devkit SD-CARD",
+  "logo": true
+ },
+ "jetson-xavier-nx-devkit-emmc": {
+  "name": "Nvidia Jetson Xavier NX Devkit eMMC",
+  "logo": true
+ },
+ "jetson-xavier-nx-devkit-seeed-2mic-hat": {
+  "name": "Nvidia Jetson Xavier NX Devkit SD Seeed ReSpeaker-2Mic",
+  "logo": true
+ },
+ "jn30b-nano": {
+  "name": "Auvidea JN30B Nano",
+  "logo": true
+ },
+ "kitra520": {
+  "name": "RushUp Kitra 520",
+  "logo": true
+ },
+ "kitra710": {
+  "name": "RushUp Kitra 710",
+  "logo": true
+ },
+ "kontron-mx8mm": {
+  "name": "Kontron i.MX8M Mini",
+  "logo": true
+ },
+ "lcbzu9": {
+  "name": "Eurotec Lowpad (lcbzu9)",
+  "logo": true
+ },
+ "n310-tx2": {
+  "name": "Aetina N310 TX2",
+  "logo": true
+ },
+ "n510-tx2": {
+  "name": "Aetina N510 TX2",
+  "logo": true
+ },
+ "nanopc-t4": {
+  "name": "NanoPC-T4",
+  "logo": true
+ },
+ "nanopi-neo-air": {
+  "name": "Nanopi Neo Air",
+  "logo": true
+ },
+ "nanopi-r2c": {
+  "name": "NanoPi R2C",
+  "logo": true
+ },
+ "nanopi-r2s": {
+  "name": "NanoPi R2S",
+  "logo": true
+ },
+ "nitrogen6x": {
+  "name": "Nitrogen 6x",
+  "logo": true
+ },
+ "nitrogen6xq2g": {
+  "name": "Nitrogen 6X Quad 2GB",
+  "logo": true
+ },
+ "nitrogen8mm": {
+  "name": "Nitrogen8M Mini SBC",
+  "logo": true
+ },
+ "npe-x500-m3": {
+  "name": "NPE X500 M3",
+  "logo": true
+ },
+ "odroid-c1": {
+  "name": "ODROID-C1+",
+  "logo": true
+ },
+ "odroid-xu4": {
+  "name": "ODROID-XU4",
+  "aliases": [
+   "odroid-ux3"
+  ],
+  "logo": true
+ },
+ "odyssey-x86": {
+  "name": "Seeed ODYSSEY-X86",
+  "logo": true
+ },
+ "orange-pi-lite": {
+  "name": "Orange Pi Lite",
+  "logo": true
+ },
+ "orange-pi-one": {
+  "name": "Orange Pi One",
+  "logo": true
+ },
+ "orange-pi-zero": {
+  "name": "Orange Pi Zero",
+  "logo": true
+ },
+ "orangepi-plus2": {
+  "name": "Orange Pi Plus2",
+  "logo": true
+ },
+ "orbitty-tx2": {
+  "name": "CTI Orbitty TX2",
+  "logo": true
+ },
+ "owa5x": {
+  "name": "Owasys owa5X",
+  "logo": true
+ },
+ "parallella": {
+  "name": "Parallella",
+  "aliases": [
+   "parallella-hdmi-resin"
+  ],
+  "logo": true
+ },
+ "photon-nano": {
+  "name": "CTI Photon Nano",
+  "logo": true
+ },
+ "photon-tx2-nx": {
+  "name": "CTI Photon TX2 NX",
+  "logo": true
+ },
+ "photon-xavier-nx": {
+  "name": "CTI Photon Xavier NX",
+  "logo": true
+ },
+ "phyboard-lyra-am62xx-2": {
+  "name": "phyBOARD-AM62x",
+  "logo": true
+ },
+ "qemux86": {
+  "name": "QEMU X86 32bit",
+  "logo": true
+ },
+ "qemux86-64": {
+  "name": "QEMU X86 64bit",
+  "logo": true
+ },
+ "radxa-cm3-rpicm4-ioboard": {
+  "name": "Radxa CM3 on Raspberry Pi Compute Module 4 IO Board",
+  "logo": true
+ },
+ "radxa-zero": {
+  "name": "Radxa Zero",
+  "logo": true
+ },
+ "raspberry-pi": {
+  "name": "Raspberry Pi (v1 / Zero / Zero W)",
+  "aliases": [
+   "raspberrypi"
+  ],
+  "logo": true
+ },
+ "raspberry-pi2": {
+  "name": "Raspberry Pi 2",
+  "aliases": [
+   "raspberrypi2"
+  ],
+  "logo": true
+ },
+ "raspberrypi0-2w-64": {
+  "name": "Raspberry Pi Zero 2 W (64bit)",
+  "logo": true
+ },
+ "raspberrypi3": {
+  "name": "Raspberry Pi 3",
+  "logo": true
+ },
+ "raspberrypi3-64": {
+  "name": "Raspberry Pi 3 (using 64bit OS)",
+  "logo": true
+ },
+ "raspberrypi4-64": {
+  "name": "Raspberry Pi 4 (using 64bit OS)",
+  "logo": true
+ },
+ "raspberrypi4-edatec-sensing": {
+  "name": "EDATEC Sensing (Raspberry Pi Computer 4)",
+  "logo": true
+ },
+ "raspberrypi4-unipi-neuron": {
+  "name": "UniPi Neuron (Raspberry Pi 4)",
+  "logo": true
+ },
+ "raspberrypi400-64": {
+  "name": "Raspberry Pi 400",
+  "logo": true
+ },
+ "raspberrypi5": {
+  "name": "Raspberry Pi 5 & CM5",
+  "logo": true
+ },
+ "raspberrypicm4-ioboard": {
+  "name": "Raspberry Pi CM4 IO Board",
+  "logo": true
+ },
+ "revpi-connect": {
+  "name": "Revolution Pi Connect",
+  "logo": true
+ },
+ "revpi-connect-4": {
+  "name": "Revolution Pi Connect 4",
+  "logo": true
+ },
+ "revpi-connect-s": {
+  "name": "Revolution Pi Connect S",
+  "logo": true
+ },
+ "revpi-core-3": {
+  "name": "Revolution Pi Core 3",
+  "logo": true
+ },
+ "rockpi-4b-rk3399": {
+  "name": "ROCK Pi 4B",
+  "logo": true
+ },
+ "rockpro64": {
+  "name": "ROCKPro64",
+  "logo": true
+ },
+ "smarc-px30": {
+  "name": "I-Pi SMARC PX30 SD-CARD",
+  "logo": true
+ },
+ "solidrun-n6g": {
+  "name": "SolidSense N6G",
+  "logo": true
+ },
+ "spacely-tx2": {
+  "name": "CTI Spacely TX2",
+  "logo": true
+ },
+ "surface-go": {
+  "name": "Microsoft Surface Go",
+  "logo": true
+ },
+ "surface-pro-6": {
+  "name": "Microsoft Surface 6",
+  "logo": true
+ },
+ "tdpzu9": {
+  "name": "Topic Florida Plus (tdpzu9)",
+  "logo": true
+ },
+ "ts4900": {
+  "name": "Technologic TS-4900",
+  "logo": true
+ },
+ "ucm-imx93": {
+  "name": "Compulab UCM-iMX93 Devkit",
+  "logo": true
+ },
+ "up-board": {
+  "name": "UP Board",
+  "logo": true
+ },
+ "up-core": {
+  "name": "UP Core",
+  "logo": true
+ },
+ "up-core-plus": {
+  "name": "UP Core Plus",
+  "logo": true
+ },
+ "up-squared": {
+  "name": "UP Squared",
+  "logo": true
+ },
+ "var-som-mx6": {
+  "name": "Variscite VAR-SOM-MX6",
+  "logo": true
+ },
+ "via-vab820-quad": {
+  "name": "VIA VAB 820-quad",
+  "aliases": [
+   "vab820-quad"
+  ],
+  "logo": true
+ },
+ "zynq-xz702": {
+  "name": "Zynq ZC702",
+  "aliases": [
+   "zc702-zynq7"
+  ],
+  "logo": true
+ }
+}

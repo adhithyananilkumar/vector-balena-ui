@@ -197,35 +197,26 @@ const SummaryWidget: React.FC = () => {
       <Title title='Summary' />
       <Box
         sx={{
-          'px': '15px',
-          'flex': 1,
-          'td': {
-            fontSize: '13px',
-            verticalAlign: 'top',
-            width: '33.3333333%',
-            paddingTop: '30px',
-          },
-          'tr:first-of-type': {
-            td: {
-              paddingTop: '0',
-            },
-          },
+          'display': 'grid',
+          'gridTemplateColumns': 'repeat(auto-fill, minmax(230px, 1fr))',
+          'borderTop': 1,
+          'borderLeft': 1,
+          'borderColor': 'divider',
+          'fontSize': 13,
+          '& > div': { p: '14px 16px', borderRight: 1, borderBottom: 1, borderColor: 'divider', minWidth: 0 },
         }}
       >
-        <table style={{ width: '100%' }}>
-          <tbody>
-            <tr>
-              <td>
+              <div>
                 <Label>UUID</Label>
                 <CopyChip title={record.uuid} label={record.uuid.substring(0, 7)} />
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>Status</Label>
                 <DeviceState />
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>VPN Last Connected</Label>
                 <FunctionField
                   render={(fieldRecord) => (
@@ -235,11 +226,9 @@ const SummaryWidget: React.FC = () => {
                     />
                   )}
                 />
-              </td>
-            </tr>
+              </div>
 
-            <tr>
-              <td>
+              <div>
                 <Label>
                   Host OS Version
                   <DeviceFieldEditor
@@ -260,23 +249,21 @@ const SummaryWidget: React.FC = () => {
                 </Link>
                 )
                 <DeviceOsUpdateProgress device={record} />
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>OS Variant</Label>
                 {formatOsVariant(record['os variant'])}
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>Device Type</Label>
                 <ReferenceField source='is of-device type' reference='device type' link={false}>
                   <TextField source='slug' />
                 </ReferenceField>
-              </td>
-            </tr>
+              </div>
 
-            <tr>
-              <td>
+              <div>
                 <Label>
                   Supervisor Version
                   <DeviceFieldEditor
@@ -295,16 +282,16 @@ const SummaryWidget: React.FC = () => {
                   reportedField='supervisor version'
                   targetField='should be managed by-release'
                 />
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>Current Release</Label>
                 <ReferenceField source='is running-release' reference='release'>
                   <SemVerChip />
                 </ReferenceField>
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>
                   Target Release
                   <DeviceFieldEditor
@@ -317,25 +304,23 @@ const SummaryWidget: React.FC = () => {
                   />
                 </Label>
                 <TargetRelease />
-              </td>
-            </tr>
+              </div>
 
-            <tr>
-              <td>
+              <div>
                 <Label>MAC Addresses</Label>
                 {record['mac address']?.split(' ').map((mac) => (
                   <CopyChip key={mac} placement='left' style={{ marginBottom: '5px' }} title={mac} label={mac} />
                 ))}
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>Local IP Addresses</Label>
                 {record['ip address']?.split(' ').map((ip) => (
                   <CopyChip key={ip} placement='left' style={{ marginBottom: '5px' }} title={ip} label={ip} />
                 ))}
-              </td>
+              </div>
 
-              <td>
+              <div>
                 <Label>Public IP Addresses</Label>
                 {record['public address']
                   ? record['public address']
@@ -344,15 +329,13 @@ const SummaryWidget: React.FC = () => {
                         <CopyChip key={ip} placement='left' style={{ marginBottom: '5px' }} title={ip} label={ip} />
                       ))
                   : 'Unavailable'}
-              </td>
-            </tr>
+              </div>
 
-            <tr>
-              <td>
+              <div>
                 <Label>Support Access</Label>
                 <UnsupportedDeviceField>Unavailable</UnsupportedDeviceField>
-              </td>
-              <td colSpan={2}>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
                 <Label>
                   Notes
                   <DeviceFieldEditor
@@ -364,10 +347,7 @@ const SummaryWidget: React.FC = () => {
                   />
                 </Label>
                 <p>{record.note || 'No notes'}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
       </Box>
     </>
   );
@@ -375,11 +355,11 @@ const SummaryWidget: React.FC = () => {
 
 const Label = styled('span')(({ theme }) => ({
   color: theme.palette.text.secondary,
-  fontSize: '11px',
+  fontSize: '12px',
+  fontWeight: 500,
   display: 'flex',
   alignItems: 'center',
-  minHeight: '24px',
-  textTransform: 'uppercase',
+  minHeight: '22px',
   marginBottom: '2px',
 }));
 

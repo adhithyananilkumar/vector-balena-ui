@@ -1,3 +1,4 @@
+import { DeviceTypeOption, BrandSlugField } from '../vector/components/brands';
 import * as React from 'react';
 import {
   Create,
@@ -27,7 +28,7 @@ export const DeviceTypeAliasList: React.FC = () => {
     <List title='Device Type Aliases' actions={canManage ? undefined : false}>
       <Datagrid size='medium' rowClick={false} bulkActionButtons={canManage ? undefined : false}>
         <ReferenceField label='Device Type' source='device type' reference='device type'>
-          <TextField source='slug' />
+          <BrandSlugField source='slug' kind='board' />
         </ReferenceField>
 
         <TextField label='Alias' source='is referenced by-alias' />
@@ -60,7 +61,7 @@ export const DeviceTypeAliasCreate: React.FC = () => (
           perPage={1000}
           sort={{ field: 'slug', order: 'ASC' }}
         >
-          <SelectInput optionText='slug' optionValue='id' validate={required()} />
+          <SelectInput optionText={<DeviceTypeOption />} optionValue='id' validate={required()} />
         </ReferenceInput>
 
         <TextInput label='Alias' source='is referenced by-alias' validate={required()} size='large' />
@@ -86,7 +87,7 @@ export const DeviceTypeAliasEdit: React.FC = () => (
           perPage={1000}
           sort={{ field: 'slug', order: 'ASC' }}
         >
-          <SelectInput optionText='slug' optionValue='id' validate={required()} />
+          <SelectInput optionText={<DeviceTypeOption />} optionValue='id' validate={required()} />
         </ReferenceInput>
 
         <TextInput label='Alias' source='is referenced by-alias' validate={required()} size='large' />

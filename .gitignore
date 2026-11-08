@@ -36,3 +36,6 @@ yarn.lock
 
 # .env files
 .env.devprod
+
+# Vercel
+.vercel
