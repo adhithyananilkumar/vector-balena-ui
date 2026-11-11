@@ -254,3 +254,10 @@ code {
     scrollbar-color: var(--vx-scroll-thumb) transparent;
   }
 }
+
+/* The sign-in form has its own show/hide toggle; hide the browser's built-in one (Edge/Chromium) */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}

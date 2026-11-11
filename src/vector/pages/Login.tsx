@@ -8,16 +8,6 @@ import { Input } from '../components/input';
 import { Label } from '../components/label';
 import Intro from './Intro';
 
-const INTRO_SEEN_KEY = 'vector:intro-seen';
-
-const readIntroSeen = (): boolean => {
-  try {
-    return window.sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
-  } catch {
-    return false;
-  }
-};
-
 const prefersReducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -31,11 +21,9 @@ const errorMessage = (error: unknown): string => {
   return 'Sign in failed. Check your credentials and try again.';
 };
 
-const fade = 'radial-gradient(ellipse 45% 50% at 50% 50%, #000 0%, transparent 75%)';
-
 const Login: React.FC = () => {
   const login = useLogin();
-  const [showIntro, setShowIntro] = useState<boolean>(() => !readIntroSeen() && !prefersReducedMotion());
+  const [showIntro, setShowIntro] = useState<boolean>(() => !prefersReducedMotion());
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -44,11 +32,6 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const finishIntro = useCallback(() => {
-    try {
-      window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-    } catch {
-      // storage can be unavailable (private mode); the intro simply replays next load
-    }
     setShowIntro(false);
   }, []);
 
@@ -75,19 +58,6 @@ const Login: React.FC = () => {
     <div className='vx dark relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12 text-foreground'>
       <AnimatePresence>{showIntro && <Intro key='intro' onDone={finishIntro} />}</AnimatePresence>
 
-      {/* quiet backdrop: a fine grid that fades out well before the edges */}
-      <div
-        aria-hidden
-        className='pointer-events-none absolute inset-0'
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-          maskImage: fade,
-          WebkitMaskImage: fade,
-        }}
-      />
-
       {/* the sign-in modal */}
       <motion.div
         className='relative flex w-full max-w-[400px] flex-col items-center'
@@ -96,12 +66,23 @@ const Login: React.FC = () => {
         transition={{ duration: 0.5, delay: showIntro ? 0 : 0.1, ease: [0.2, 0.7, 0.2, 1] }}
       >
         {/* the brand sits above the card, large */}
-        <img src={brand.logoDark} alt='Protoform Vector' className='mb-10 h-[72px] w-auto select-none' draggable={false} />
+        <motion.img
+          src={brand.logoDark}
+          alt='Protoform Vector'
+          className='mb-10 h-[72px] w-auto select-none'
+          draggable={false}
+          initial={{ opacity: 0, y: -12, scale: 0.96 }}
+          animate={showIntro ? { opacity: 0, y: -12, scale: 0.96 } : { opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: showIntro ? 0 : 0.1, ease: [0.2, 0.7, 0.2, 1] }}
+        />
 
-        <main
+        <motion.main
           role='dialog'
           aria-label='Sign in'
           className='relative w-full border border-border bg-card p-8 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.95)]'
+          initial={{ opacity: 0, y: 24, clipPath: 'inset(0 0 100% 0)' }}
+          animate={showIntro ? { opacity: 0, y: 24, clipPath: 'inset(0 0 100% 0)' } : { opacity: 1, y: 0, clipPath: 'inset(-8px -8px -8px -8px)' }}
+          transition={{ duration: 0.6, delay: showIntro ? 0 : 0.2, ease: [0.2, 0.7, 0.2, 1] }}
         >
         {/* corner ticks */}
         {['-top-1.5 -left-1.5 border-t border-l', '-top-1.5 -right-1.5 border-t border-r', '-bottom-1.5 -left-1.5 border-b border-l', '-right-1.5 -bottom-1.5 border-r border-b'].map(
@@ -159,12 +140,22 @@ const Login: React.FC = () => {
           </div>
 
           <div aria-live='polite'>
-            {error && (
-              <div role='alert' className='flex items-start gap-2.5 border border-destructive/40 px-3.5 py-3 text-[13px] text-destructive'>
-                <AlertCircle className='mt-px size-4 shrink-0' aria-hidden />
-                <span>{error}</span>
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.div
+                  key={error}
+                  role='alert'
+                  className='flex items-start gap-2.5 border border-destructive/40 px-3.5 py-3 text-[13px] text-destructive'
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto', x: [0, -8, 8, -5, 5, 0] }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, x: { duration: 0.4, delay: 0.1 } }}
+                >
+                  <AlertCircle className='mt-px size-4 shrink-0' aria-hidden />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <Button type='submit' variant='accent' size='lg' disabled={pending} className='w-full'>
@@ -181,7 +172,7 @@ const Login: React.FC = () => {
         <p className='mt-7 border-t border-border pt-5 text-center font-mono text-[10.5px] tracking-wider text-muted-foreground/80 uppercase'>
           {brand.company} {brand.name}
         </p>
-        </main>
+        </motion.main>
       </motion.div>
     </div>
   );
