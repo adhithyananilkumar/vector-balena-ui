@@ -69,7 +69,7 @@
     "build": "vite build",
     "preview": "vite preview --outDir dist/client",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/authProvider/*.test.ts src/components/*.test.ts src/dataProvider/*.test.ts src/lib/*.test.ts src/vector/docs/*.test.ts src/versions/*.test.ts test/*.test.ts",
+    "test": "tsx --test src/authProvider/*.test.ts src/components/*.test.ts src/dataProvider/*.test.ts src/lib/*.test.ts src/vector/docs/*.test.ts src/vector/lib/*.test.ts src/versions/*.test.ts test/*.test.ts",
     "prettier": "prettier --write ."
   },
   "browserslist": {

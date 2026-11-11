@@ -82,14 +82,17 @@ See [Remote access](doc:remote-access) for what each setting does.
 | `OPEN_BALENA_REMOTE_MAX_UPLOAD_BYTES` | `1073741824` |
 | `OPEN_BALENA_REMOTE_MAX_PATH_BYTES` | `4096` |
 
-## Base image library
+## OS images
+
+OS images are streamed to the user's computer and are not stored on the server.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VECTOR_BASE_IMAGES_DIR` | `./data/base-images` | Where downloaded balenaOS images are stored. |
 | `VECTOR_OS_CATALOG_API_URL` | `https://api.balena-cloud.com` | Where versions are listed and images are downloaded. |
+| `VECTOR_IMAGE_MAX_STREAMS` | `2` | How many images may stream at once. Others wait with a "try again" message. |
+| `VECTOR_IMAGE_TMP_DIR` | system temp folder | Scratch folder for the boot partition (tens of megabytes) while an image streams. It is deleted before the rest of the image is sent. |
 
-See [Base images](doc:base-images).
+See [Add and flash a device](doc:add-device).
 
 ## Matching the API version
 
@@ -143,4 +146,4 @@ It runs as a container in the openBalena stack, next to the API, and needs no ma
 docker compose up -d vector-server
 ```
 
-Downloaded base images are kept in the `vector-data` volume, so they survive container replacement. Put it behind HTTPS (for example a route on the stack's HAProxy) before pointing a hosted UI at it.
+The `vector-data` volume keeps the server's learned SSH host keys and similar small state; OS images are not stored there. Put it behind HTTPS (for example a route on the stack's HAProxy) before pointing a hosted UI at it.

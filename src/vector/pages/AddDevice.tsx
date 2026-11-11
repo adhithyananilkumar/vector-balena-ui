@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Title, useGetList } from 'react-admin';
-import { CheckCircle2, Download, FileJson, HardDriveDownload, Loader2, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, FileJson, FolderOpen, HardDriveDownload, Loader2, TriangleAlert, X } from 'lucide-react';
 import { BrandMark, lookupDeviceType } from '../components/brands';
 import { RichSelect, type RichOption } from '../components/rich-select';
 import { Button } from '../components/button';
@@ -13,20 +13,45 @@ import { Select } from '../components/select';
 import { authFetch, formatBytes } from '../lib/api';
 import { cn } from '../lib/utils';
 import { serverUrl } from '../../lib/serverUrl';
+import {
+  canPickFile,
+  canPickFolder,
+  chooseFile,
+  chooseFolder,
+  clearlyTooLittleSpace,
+  copyResponseToFile,
+  describeSaveError,
+  downloadWithBrowser,
+  ensureFolderAccess,
+  forgetFolder,
+  formatDuration,
+  loadSavedFolder,
+  probeFolder,
+  saveFolder,
+  trackProgress,
+  uniqueFileName,
+  verifySavedFile,
+  type Progress,
+  type SavableFile,
+  type SavableFolder,
+  type SaveRecovery,
+  type Verification,
+} from '../lib/imageSave';
 
-interface BaseImage {
-  deviceType: string;
-  version: string;
-  state: string;
-}
 interface Job {
   id: string;
-  state: 'building' | 'ready' | 'error';
+  state: 'ready';
   fileName: string;
-  sizeBytes?: number;
-  error?: string;
   deviceUuid?: string;
 }
+interface Ticket {
+  job: Job;
+  downloadPath: string;
+}
+
+/** The file name the server will use, so the save dialog can suggest it before the image is prepared. */
+const imageFileName = (deviceType: string, version: string): string =>
+  `vector-${deviceType}-${version.replace(/[^0-9A-Za-z.-]/g, '_')}.img`;
 
 const microLabel = 'font-mono text-[10.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase';
 
@@ -83,7 +108,6 @@ const AddDevice: React.FC = () => {
   const [version, setVersion] = useState('');
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [loadingVersions, setLoadingVersions] = useState(false);
-  const [downloaded, setDownloaded] = useState<BaseImage[]>([]);
   const [development, setDevelopment] = useState<'production' | 'development'>('production');
   const [provisioning, setProvisioning] = useState<'fleet' | 'device'>('fleet');
   const [registeredUuid, setRegisteredUuid] = useState<string | undefined>();
@@ -93,8 +117,15 @@ const AddDevice: React.FC = () => {
   const [dnsServers, setDnsServers] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'config' | 'image' | null>(null);
-  const [job, setJob] = useState<Job | null>(null);
-  const [downloadPath, setDownloadPath] = useState<string | undefined>();
+  const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [folder, setFolder] = useState<SavableFolder | undefined>();
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [recovery, setRecovery] = useState<SaveRecovery>('none');
+  const [warning, setWarning] = useState<string | null>(null);
+  const [folderAccess, setFolderAccess] = useState<PermissionState | undefined>();
+  const [savedTo, setSavedTo] = useState<{ fileName: string; bytes: number; where: string; verification?: Verification } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const folderPicker = useMemo(() => canPickFolder(), []);
 
   const fleet = useMemo(() => (fleets ?? []).find((item) => String(item.id) === fleetId), [fleets, fleetId]);
   const deviceType = useMemo(() => {
@@ -103,9 +134,10 @@ const AddDevice: React.FC = () => {
   }, [fleet, deviceTypes]);
 
   useEffect(() => {
-    authFetch<{ images: BaseImage[] }>('/image-maker/base-images')
-      .then((result) => setDownloaded(result.images))
-      .catch(() => undefined);
+    void loadSavedFolder().then(async (saved) => {
+      setFolder(saved);
+      if (saved?.queryPermission) setFolderAccess(await saved.queryPermission({ mode: 'readwrite' }).catch(() => undefined));
+    });
   }, []);
 
   // versions for the fleet's device type
@@ -113,8 +145,8 @@ const AddDevice: React.FC = () => {
     setVersions([]);
     setVersion('');
     setVersionsError(null);
-    setJob(null);
-    setDownloadPath(undefined);
+    setTicket(null);
+    setSavedTo(null);
     setRegisteredUuid(undefined);
     if (!deviceType) return undefined;
     let cancelled = false;
@@ -123,9 +155,7 @@ const AddDevice: React.FC = () => {
       .then((result) => {
         if (cancelled) return;
         setVersions(result.versions);
-        // prefer a version that is already downloaded, then the latest
-        const have = result.versions.find((candidate) => downloaded.some((d) => d.deviceType === deviceType && d.version === candidate && d.state === 'ready'));
-        setVersion(have ?? result.versions[0] ?? '');
+        setVersion(result.versions[0] ?? '');
       })
       .catch((e: unknown) => !cancelled && setVersionsError(e instanceof Error ? e.message : 'Unable to list versions.'))
       .finally(() => !cancelled && setLoadingVersions(false));
@@ -149,20 +179,29 @@ const AddDevice: React.FC = () => {
     [fleets, deviceTypes],
   );
 
-  const haveBase = downloaded.some((d) => d.deviceType === deviceType && d.version === version && d.state === 'ready');
   const wifiMissing = network === 'wifi' && !wifiSsid.trim();
   const ready = !!fleet && !!deviceType && !!version && !wifiMissing;
 
-  const payload = () => ({
-    appId: Number(fleetId),
-    deviceType,
-    version,
-    developmentMode: development === 'development',
-    provisioning,
-    network,
-    ...(network === 'wifi' ? { wifiSsid: wifiSsid.trim(), wifiKey } : {}),
-    ...(dnsServers.trim() ? { dnsServers: dnsServers.trim() } : {}),
-  });
+  const payload = useCallback(
+    () => ({
+      appId: Number(fleetId),
+      deviceType,
+      version,
+      developmentMode: development === 'development',
+      provisioning,
+      network,
+      ...(network === 'wifi' ? { wifiSsid: wifiSsid.trim(), wifiKey } : {}),
+      ...(dnsServers.trim() ? { dnsServers: dnsServers.trim() } : {}),
+    }),
+    [fleetId, deviceType, version, development, provisioning, network, wifiSsid, wifiKey, dnsServers],
+  );
+
+  // a prepared image belongs to the answers it was prepared with: change one and it has to be prepared again
+  const answers = JSON.stringify(payload());
+  useEffect(() => {
+    setTicket(null);
+    setSavedTo(null);
+  }, [answers]);
 
   const downloadConfig = async () => {
     setBusy('config');
@@ -178,43 +217,127 @@ const AddDevice: React.FC = () => {
     }
   };
 
-  const prepareImage = async () => {
-    setBusy('image');
-    setError(null);
-    setDownloadPath(undefined);
-    try {
-      const result = await authFetch<{ job: Job }>('/image-maker/images', { method: 'POST', body: JSON.stringify(payload()) });
-      setJob(result.job);
-      setRegisteredUuid(result.job.deviceUuid);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to prepare the image.');
-      setBusy(null);
+  const showProblem = (cause: unknown, where?: string) => {
+    const problem = describeSaveError(cause, where);
+    if (problem.recovery === 'none') return;
+    setError(problem.message);
+    setRecovery(problem.recovery);
+    if (problem.forgetFolder) {
+      setFolder(undefined);
+      void forgetFolder();
     }
   };
 
-  // poll while the image is being prepared
-  const jobId = job?.state === 'building' ? job.id : undefined;
-  const pollRef = useRef<number | undefined>(undefined);
-  useEffect(() => {
-    if (!jobId) return undefined;
-    pollRef.current = window.setInterval(() => {
-      authFetch<{ job: Job; downloadPath?: string }>(`/image-maker/images/${jobId}`)
-        .then((result) => {
-          setJob(result.job);
-          if (result.job.state !== 'building') {
-            setDownloadPath(result.downloadPath);
-            setBusy(null);
-            if (result.job.state === 'error') setError(result.job.error ?? 'The image could not be prepared.');
-          }
-        })
-        .catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : 'Lost track of the image.');
-          setBusy(null);
-          setJob(null);
-        });
-    }, 1500);
-    return () => window.clearInterval(pollRef.current);
-  }, [jobId]);
+  const pickFolder = async () => {
+    setError(null);
+    setRecovery('none');
+    try {
+      const chosen = await chooseFolder();
+      await probeFolder(chosen); // fail now, not after the image has been prepared
+      setFolder(chosen);
+      setFolderAccess('granted');
+      await saveFolder(chosen);
+    } catch (e) {
+      showProblem(e, 'the folder you chose');
+    }
+  };
+
+  const clearFolder = () => {
+    setFolder(undefined);
+    setFolderAccess(undefined);
+    void forgetFolder();
+  };
+
+  /** The prepared image if it is still valid (with a fresh link), otherwise a newly prepared one. */
+  const obtainTicket = async (): Promise<Ticket> => {
+    if (ticket) {
+      try {
+        const fresh = await authFetch<Ticket>(`/image-maker/images/${ticket.job.id}`);
+        setTicket(fresh);
+        return fresh;
+      } catch {
+        /* expired or the server restarted: prepare it again below */
+      }
+    }
+    const created = await authFetch<Ticket>('/image-maker/images', { method: 'POST', body: JSON.stringify(payload()) });
+    setTicket(created);
+    setRegisteredUuid(created.job.deviceUuid);
+    return created;
+  };
+
+  /**
+   * Prepares the image (this is where a device is registered, when asked to) and saves it on this computer. The save
+   * location is chosen and checked first, straight from the click, because browsers only allow the dialog right
+   * after one, and so that nothing is registered or downloaded for a place that cannot be written to.
+   */
+  const downloadImage = async () => {
+    setError(null);
+    setRecovery('none');
+    setWarning(null);
+    setSavedTo(null);
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setError('You appear to be offline. Reconnect and try again.');
+      setRecovery('retry');
+      return;
+    }
+    const wanted = imageFileName(deviceType, version);
+    let target: { file: SavableFile; where: string; name: string } | undefined;
+    try {
+      if (folder) {
+        if (!(await ensureFolderAccess(folder))) {
+          const denied = new Error('denied');
+          denied.name = 'NotAllowedError';
+          throw denied;
+        }
+        await probeFolder(folder);
+        const name = await uniqueFileName(folder, wanted); // never replace an image that is already there
+        target = { file: await folder.getFileHandle(name, { create: true }), where: folder.name, name };
+      } else if (canPickFile()) {
+        const picked = await chooseFile(wanted);
+        target = { file: picked, where: 'the location you chose', name: picked.name };
+      }
+    } catch (e) {
+      showProblem(e, folder?.name);
+      return;
+    }
+    if (await clearlyTooLittleSpace(2.5 * 1024 ** 3)) {
+      setWarning('Your browser reports very little free space. The image needs roughly 2 to 8 GB; the save fails cleanly if it runs out.');
+    }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setBusy('image');
+    try {
+      const current = await obtainTicket();
+      const url = serverUrl(current.downloadPath);
+      if (!target) {
+        // no folder access in this browser: a plain download into the browser's own downloads folder
+        downloadWithBrowser(url, current.job.fileName);
+        setSavedTo({ fileName: current.job.fileName, bytes: 0, where: "your browser's downloads folder" });
+        return;
+      }
+      let track = trackProgress(undefined);
+      setProgress({ written: 0, bytesPerSecond: 0 });
+      const response = await fetch(url, { signal: controller.signal });
+      const bytes = await copyResponseToFile(
+        response,
+        target.file,
+        (written) => setProgress(track(written)),
+        controller.signal,
+        (total) => {
+          track = trackProgress(total);
+        },
+      );
+      const verification = await verifySavedFile(target.file, bytes);
+      setSavedTo({ fileName: target.name, bytes, where: target.where, verification });
+    } catch (e) {
+      showProblem(e, target?.where);
+    } finally {
+      abortRef.current = null;
+      setProgress(null);
+      setBusy(null);
+    }
+  };
 
   return (
     <VxScope className='w-full pb-6'>
@@ -222,7 +345,23 @@ const AddDevice: React.FC = () => {
       {error && (
         <div role='alert' className='mb-4 flex items-start gap-2 border border-destructive/40 px-4 py-3 text-[13px] text-destructive'>
           <TriangleAlert className='mt-0.5 size-4 shrink-0' aria-hidden />
-          {error}
+          <div className='grid gap-2'>
+            <span>{error}</span>
+            {recovery !== 'none' && (
+              <span className='flex flex-wrap gap-2'>
+                {recovery === 'choose-folder' && folderPicker && (
+                  <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => void pickFolder()}>
+                    Choose another folder
+                  </Button>
+                )}
+                {(recovery === 'allow-access' || recovery === 'retry' || recovery === 'choose-folder') && ready && (
+                  <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => void downloadImage()}>
+                    Try again
+                  </Button>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -251,11 +390,7 @@ const AddDevice: React.FC = () => {
             <Select
               id='vx-ad-version'
               value={version}
-              onChange={(event) => {
-                setVersion(event.target.value);
-                setJob(null);
-                setDownloadPath(undefined);
-              }}
+              onChange={(event) => setVersion(event.target.value)}
               disabled={!deviceType || loadingVersions || versions.length === 0}
             >
               {!deviceType && <option value=''>Choose a fleet first</option>}
@@ -264,25 +399,13 @@ const AddDevice: React.FC = () => {
                 <option key={candidate} value={candidate}>
                   {candidate}
                   {index === 0 ? '  (latest)' : ''}
-                  {downloaded.some((d) => d.deviceType === deviceType && d.version === candidate && d.state === 'ready') ? '  · downloaded' : ''}
                 </option>
               ))}
             </Select>
             {versionsError && <p className='text-xs text-destructive'>{versionsError}</p>}
             {deviceType && version && (
-              <p className={cn('flex items-center gap-1.5 text-xs', haveBase ? 'text-success' : 'text-muted-foreground')}>
-                {haveBase ? <CheckCircle2 className='size-3.5' aria-hidden /> : null}
-                {haveBase ? (
-                  'Base image is downloaded and will be reused.'
-                ) : (
-                  <>
-                    Not downloaded yet.{' '}
-                    <Link to='/base-images' className='text-accent underline underline-offset-2'>
-                      Download it under Base images
-                    </Link>{' '}
-                    to build an image.
-                  </>
-                )}
+              <p className='text-xs text-muted-foreground'>
+                The image goes from balena&apos;s servers through Vector straight to your computer. It is not stored on the server.
               </p>
             )}
           </div>
@@ -374,18 +497,88 @@ const AddDevice: React.FC = () => {
             {busy === 'config' ? <Loader2 className='animate-spin' aria-hidden /> : <FileJson aria-hidden />}
             Download config.json only
           </Button>
-          {downloadPath && job?.state === 'ready' ? (
-            <Button variant='accent' asChild>
-              <a href={serverUrl(downloadPath)} download={job.fileName}>
-                <Download aria-hidden />
-                Download image ({formatBytes(job.sizeBytes)})
-              </a>
-            </Button>
+          {folderPicker ? (
+            <div className='grid gap-1.5 border border-input px-3 py-2.5'>
+              <span className={microLabel}>Save to</span>
+              <span className='flex items-center gap-2 text-sm'>
+                <FolderOpen className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+                <span className='min-w-0 truncate' title={folder?.name}>
+                  {folder ? folder.name : 'Ask me each time (starts in Downloads)'}
+                </span>
+              </span>
+              {folder && folderAccess === 'prompt' && (
+                <span className='text-xs text-muted-foreground'>The browser will ask you to allow access to this folder again when you download.</span>
+              )}
+              {folder && folderAccess === 'denied' && (
+                <span className='text-xs text-destructive'>The browser has blocked this folder. Choose it again to allow access.</span>
+              )}
+              <span className='flex flex-wrap gap-2'>
+                <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => void pickFolder()}>
+                  {folder ? 'Change folder' : 'Choose a folder'}
+                </Button>
+                {folder && (
+                  <Button variant='ghost' size='sm' disabled={busy !== null} onClick={clearFolder}>
+                    Ask each time
+                  </Button>
+                )}
+              </span>
+            </div>
           ) : (
-            <Button variant='accent' disabled={!ready || !haveBase || busy !== null} onClick={() => void prepareImage()}>
+            <p className='border border-input px-3 py-2.5 text-xs text-muted-foreground'>
+              Your browser saves to its own downloads folder. Use Chrome or Edge if you want to pick the folder here.
+            </p>
+          )}
+          {warning && <p className='border border-warning/40 px-3 py-2 text-xs'>{warning}</p>}
+          {busy === 'image' && progress !== null ? (
+            <div className='grid gap-2'>
+              <p className='flex items-center gap-2 text-sm'>
+                <Loader2 className='size-4 animate-spin' aria-hidden />
+                {progress.percent !== undefined ? `Saving… ${Math.floor(progress.percent)}%` : 'Saving…'}
+              </p>
+              {progress.percent !== undefined && (
+                <div className='h-1.5 w-full bg-foreground/10' role='progressbar' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(progress.percent)}>
+                  <div className='h-full bg-accent transition-[width]' style={{ width: `${progress.percent}%` }} />
+                </div>
+              )}
+              <p className='text-xs text-muted-foreground'>
+                {formatBytes(progress.written)}
+                {progress.total ? ` of ${formatBytes(progress.total)}` : ''}
+                {progress.bytesPerSecond > 0 ? ` · ${formatBytes(progress.bytesPerSecond)}/s` : ''}
+                {progress.etaSeconds !== undefined ? ` · about ${formatDuration(progress.etaSeconds)} left` : ''}
+              </p>
+              <Button variant='outline' onClick={() => abortRef.current?.abort()}>
+                <X aria-hidden />
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button variant='accent' disabled={!ready || busy !== null} onClick={() => void downloadImage()}>
               {busy === 'image' ? <Loader2 className='animate-spin' aria-hidden /> : <HardDriveDownload aria-hidden />}
-              {busy === 'image' ? 'Preparing image…' : 'Prepare flash-ready image'}
+              {busy === 'image' ? 'Preparing…' : ticket ? 'Download the image again' : 'Download flash-ready image'}
             </Button>
+          )}
+          {savedTo && (
+            <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
+              <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
+              <span>
+                {savedTo.bytes > 0 ? (
+                  <>
+                    Saved <code>{savedTo.fileName}</code> ({formatBytes(savedTo.bytes)}) to {savedTo.where}.
+                  </>
+                ) : (
+                  <>
+                    <code>{savedTo.fileName}</code> is downloading to {savedTo.where}.
+                  </>
+                )}{' '}
+                Flash it with balenaEtcher.
+                {savedTo.verification?.ok && <span className='block text-muted-foreground'>Checked: the file size and disk signature are correct.</span>}
+                {savedTo.verification && !savedTo.verification.ok && (
+                  <span className='block text-destructive'>
+                    {savedTo.verification.problem} Do not flash this file; download the image again.
+                  </span>
+                )}
+              </span>
+            </p>
           )}
           {registeredUuid && (
             <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
@@ -396,9 +589,9 @@ const AddDevice: React.FC = () => {
             </p>
           )}
           <p className='text-xs leading-relaxed text-muted-foreground'>
-            The image is a private copy of the base image with this fleet&apos;s config. The link is valid for ten minutes and
-            the copy is removed after thirty. Already flashed a drive? Download the config only and replace
-            <code className='mx-1'>config.json</code> on its boot partition.
+            The image is the balenaOS download with this fleet&apos;s config written into it while it streams to you. Nothing is
+            kept on the server. It is large (often over a gigabyte), so keep this page open until it finishes. Already flashed
+            a drive? Download the config only and replace <code className='mx-1'>config.json</code> on its boot partition.
           </p>
         </CardContent>
       </Card>

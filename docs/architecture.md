@@ -66,7 +66,7 @@ src/
 ├── ui/                   shared pieces (terminal, file transfer, logs, theme)
 ├── lib/                  helpers (server URL, env, remote access protocol)
 ├── versions/             API compatibility table
-└── vector/               Vector shell: layout, pages (Add device, Base images, Delta builds), in-app docs
+└── vector/               Vector shell: layout, pages (Add device, Delta builds), in-app docs
 public/                   static assets, device-type logos, env.js
 vercel.json               Vercel build and headers
 ```

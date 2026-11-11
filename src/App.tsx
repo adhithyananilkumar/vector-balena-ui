@@ -63,7 +63,6 @@ import balenaOs from './components/balenaOs';
 import DeviceDashboard from './dashboards/device';
 import MainDashboard from './dashboards/main';
 import VectorLogin from './vector/pages/Login';
-import BaseImages from './vector/pages/BaseImages';
 import Deltas from './vector/pages/Deltas';
 import AddDevice from './vector/pages/AddDevice';
 import Docs from './vector/pages/Docs';
@@ -106,7 +105,6 @@ const NavigateToDevice: React.FC = () => {
 
 const customRoutes: React.ReactElement[] = [
   <Route key='custom-route-device-summary' path='/devices/:uuid/summary' element={<NavigateToDevice />} />,
-  <Route key='custom-route-base-images' path='/base-images' element={<BaseImages />} />,
   <Route key='custom-route-deltas' path='/deltas' element={<Deltas />} />,
   <Route key='custom-route-add-device' path='/add-device' element={<AddDevice />} />,
 ];

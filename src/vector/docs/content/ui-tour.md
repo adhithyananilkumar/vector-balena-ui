@@ -19,7 +19,7 @@ Everything in Vector is reachable from the left sidebar and the top bar.
 | Group | Contains |
 |---|---|
 | **Overview** | Dashboard with fleet and device counts. |
-| **Provision** | **Add device** and **Base images**. |
+| **Provision** | **Add device** and **Delta builds**. |
 | **Fleets** | Fleets, plus their configuration variables, environment variables and tags. |
 | **Devices** | Every registered device, with variables and tags. |
 | **Images, Releases, Services** | What was built and pushed: releases, the container images in them, and the services they define. |

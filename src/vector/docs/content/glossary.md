@@ -7,7 +7,7 @@ Short definitions of the terms used in Vector and in these docs.
 | **API key** | A credential for scripts and CI. It can be used instead of a password. |
 | **balena CLI** | The command-line tool that builds, deploys and manages. Command name: `balena`. |
 | **balenaOS** | The small operating system that runs on each device and runs your containers. |
-| **Base image** | An unconfigured balenaOS image for one device type and version, downloaded once and reused. |
+| **Flash-ready image** | A balenaOS image with your fleet's configuration written into it. Vector streams it to your computer; it is never stored on the server. |
 | **Build** | Turning your project into container images. With Vector this happens on your own computer. |
 | **CA (certificate authority)** | The authority that signs your server's certificates. A self-signed server needs it installed on every computer and device. |
 | **`config.json`** | The file on a device's boot partition that says which server to use and who the device is. |

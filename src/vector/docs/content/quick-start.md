@@ -55,13 +55,9 @@ balena fleet create MyFleet --type raspberrypi4-64
 
 The device type decides the CPU architecture, so choose the type that matches your hardware.
 
-## 5. Download a base image
+## 5. Create the flash image
 
-In the UI open **Base images**, pick the device type and a balenaOS version, and press **Download**. This is a one-time download that every device of that type reuses. See [Base images](doc:base-images).
-
-## 6. Create the flash image
-
-Open **Add device**, choose the fleet, balenaOS version, network and mode, then download the image. See [Add and flash a device](doc:add-device).
+Open **Add device**, choose the fleet, balenaOS version, network and mode, then download the image. It goes straight to your computer (you can choose the folder in Chrome or Edge) and is not stored on the server. See [Add and flash a device](doc:add-device).
 
 ## 7. Flash and boot
 

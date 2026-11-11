@@ -12,14 +12,7 @@ const help: Record<string, PageHelp> = {
     details: [
       'Choose a fleet and balenaOS version, then pick mode, provisioning and network. Download a full image to flash with Etcher, or just config.json for a drive you already flashed.',
       'Fleet-wide images work for any number of devices. "This device only" registers one device now and gives it its own key.',
-      'The OS version must be downloaded under Base images first. It is stored once and reused.',
-    ],
-  },
-  'base-images': {
-    summary: 'balenaOS images stored on this server.',
-    details: [
-      'Download an image once; Vector reuses it for every device of that type, so there is no multi-gigabyte download per device.',
-      'Images download one at a time. Deleting one only frees disk space, and you can download it again later.',
+      'The image streams from balena\'s download service through Vector to your computer, with the fleet config written into it on the way. Nothing is stored on the server. In Chrome or Edge you can pick the folder it is saved to.',
     ],
   },
   'deltas': {

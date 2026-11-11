@@ -5,7 +5,8 @@ A new device needs a balenaOS image that already knows which Vector server to co
 ## Before you start
 
 - A [fleet](doc:ui-tour) exists whose device type matches your hardware.
-- The balenaOS version you want is downloaded under **Base images** (see [Base images](doc:base-images)).
+- Your computer has about **2 GB of free disk space** for the image. Vector does not keep a copy; the image goes straight to your computer.
+- A Chromium browser (Chrome or Edge) if you want to choose the folder the image is saved to. Other browsers save to their own downloads folder.
 - DNS and certificates work for devices, not only for your computer (see [Certificates and DNS](doc:certificates-dns)).
 
 ## 1. Choose the fleet and OS
@@ -13,7 +14,7 @@ A new device needs a balenaOS image that already knows which Vector server to co
 Open **Add device** in the sidebar.
 
 1. Pick the **Fleet**. The device type is taken from the fleet.
-2. Pick the **balenaOS version**. If the list is empty or the version you want is missing, download it first under **Base images**.
+2. Pick the **balenaOS version**. The newest is selected. Nothing needs to be downloaded in advance. If the list is empty, the Vector server cannot reach balena's version catalog.
 
 ## 2. Choose mode, provisioning and network
 
@@ -37,8 +38,40 @@ Open **Add device** in the sidebar.
 
 Two buttons are offered:
 
-- **Prepare flash-ready image** builds a complete image: the base image plus this fleet's configuration. The download link is valid for **10 minutes** and the copy is deleted after **30**. Download it straight away.
+- **Download flash-ready image** saves a complete balenaOS image with this fleet's configuration already written into it. Vector downloads balenaOS from balena, writes the configuration into the image's boot partition while it streams, and sends the result straight to your computer. **Nothing is stored on the server**, so there is no server disk to fill up. It is large (often over a gigabyte): keep the page open until it finishes. **Cancel** stops it.
 - **Download config.json only** gives just the configuration file, for a drive you already flashed.
+
+### Where the image is saved
+
+In **Chrome** and **Edge** the page has a **Save to** box:
+
+- By default it asks each time and starts in your **Downloads** folder.
+- **Choose a folder** sets a default folder (for example `D:\balenaOS`). Vector remembers it in this browser and saves there without asking. The browser may ask you to allow access again after you restart it.
+- **Ask each time** forgets the folder.
+
+In other browsers (Firefox, Safari) the file goes to the browser's own downloads folder, which you change in the browser's settings.
+
+### Checks and recovery
+
+Vector checks the image at each step, so a bad download is caught instead of flashed:
+
+- **Before anything is prepared**, the page tests the folder by writing and removing a tiny file. A folder that was moved, is read-only or has lost its permission is reported straight away, before a device is registered or a byte is downloaded.
+- **Existing files are never replaced.** If `vector-raspberrypi4-64-9.0.3_rev2.img` is already in the folder, the new image is saved as `... (2).img`.
+- **While saving**, the page shows the amount saved, the speed and, when the size is known, the percentage and time left. **Cancel** stops it. Your browser writes to a temporary file and only puts the image in place when it is complete, so a cancelled or failed download leaves no half-written image.
+- **The server checks the image against the checksum recorded in balena's download.** If it is damaged or cut short, the last part is never sent, the download fails, and nothing is saved.
+- **After saving**, the page reads the file back and confirms its size and that it starts like a disk image. You see **Checked** or a warning not to flash it.
+
+If something goes wrong the message says what to do, with a button for the likely fix (**Choose another folder**, **Try again**):
+
+| Message | Meaning |
+|---|---|
+| Not allowed to write to the folder | The browser needs permission again. Click **Try again** and allow access, or choose another folder. |
+| The folder was moved, renamed or removed | Vector forgets the folder. Choose one again. |
+| A file is open in another program | Close the program that holds the file, or choose another folder. |
+| Not enough free space | The image needs roughly 2 to 8 GB. Free space or choose another drive. |
+| The connection was lost | Nothing was saved. **Try again** reuses the image you prepared, so no second device is registered. |
+
+A prepared image can be downloaded up to **5 times** within 30 minutes. After that, or if the page's answers change, it is prepared again.
 
 If you chose **This device only**, a green note confirms the device was registered. It shows as offline until it boots with this config.
 

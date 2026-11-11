@@ -223,19 +223,35 @@ No `global-admin` role exists yet, so Vector is in legacy mode. See [Legacy mode
 
 Set `OPEN_BALENA_BOOTSTRAP_USER_ID` to your numeric user id and restart the UI. Startup repairs the `global-admin` role and your assignment.
 
-## Base images and Add device
+## Add device
 
 ### The OS version list is empty
 
 The Vector server cannot reach the catalog. Check outbound internet and `VECTOR_OS_CATALOG_API_URL`.
 
-### Add device says there is no base image
+### The image download stops or says the link expired
 
-Download the exact version first under **Base images**. See [Base images](doc:base-images).
+The download link is valid for 10 minutes, and the prepared image can be downloaded again for 30. Press **Download the image again**; a device registered for a **This device only** image is not registered a second time. If the answers on the page change, the image is prepared again.
 
-### The download link expired
+### The image failed its check, or the saved file is flagged
 
-Image links are valid for 10 minutes and the copy is removed after 30. Prepare the image again.
+The server compares the image with the checksum in balena's download and stops before the last part if they differ. The page also reads the saved file back. In either case do not flash that file: press **Try again**, which streams a fresh copy. If it keeps failing, check the connection between the Vector server and the internet.
+
+### The download stalls and fails after a minute
+
+The server gives up when balena sends nothing for 60 seconds, and the page shows the error. Press **Try again**.
+
+### "Other images are being downloaded right now"
+
+The server streams at most two images at a time (`VECTOR_IMAGE_MAX_STREAMS`). Try again in a minute.
+
+### The page has no folder choice
+
+Choosing a folder needs Chrome, Edge or another Chromium browser. In other browsers the image goes to the browser's downloads folder.
+
+### "The balenaOS download service answered HTTP 404"
+
+That device type and version do not exist in balena's download service. Pick another version.
 
 ### Etcher does not list my SD card
 

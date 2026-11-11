@@ -115,7 +115,6 @@ export const useNavGroups = (): NavGroup[] => {
             icon: HardDriveDownload,
             children: [
               { name: 'add-device', label: 'Add device', icon: Cpu },
-              { name: 'base-images', label: 'Base images', icon: HardDriveDownload },
               { name: 'deltas', label: 'Delta builds', icon: GitCompareArrows },
             ],
           },

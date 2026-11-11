@@ -8,7 +8,6 @@ import multiArch from './content/multi-arch.md?raw';
 import releasesRollouts from './content/releases-rollouts.md?raw';
 import ciAutomation from './content/ci-automation.md?raw';
 import addDevice from './content/add-device.md?raw';
-import baseImages from './content/base-images.md?raw';
 import deviceDashboard from './content/device-dashboard.md?raw';
 import remoteAccess from './content/remote-access.md?raw';
 import accessControl from './content/access-control.md?raw';
@@ -54,7 +53,6 @@ const definitions: DocDefinition[] = [
   { slug: 'ci-automation', section: 'Deploy', description: 'Deploy from GitHub Actions or a build machine.', source: ciAutomation },
 
   { slug: 'add-device', section: 'Devices', description: 'Create a flash-ready image and bring a device online.', source: addDevice },
-  { slug: 'base-images', section: 'Devices', description: 'Download balenaOS once and reuse it for every device.', source: baseImages },
   { slug: 'device-dashboard', section: 'Devices', description: 'Services, logs, variables, tags and update progress.', source: deviceDashboard },
   { slug: 'remote-access', section: 'Devices', description: 'Browser terminal and file transfer for any device.', source: remoteAccess },
 
