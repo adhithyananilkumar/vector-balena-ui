@@ -23,7 +23,7 @@ const REFRESH_MS = 30_000;
 const classifyDevice = (device: Record<string, unknown>): DeviceState => {
   const state = String(getDeviceOverallState(device)).toLowerCase();
   if (state === 'operational') return 'online';
-  if (state === 'disconnected') return 'offline';
+  if (state === 'disconnected' || state === 'awaiting first boot') return 'offline';
   if (state.includes('fail')) return 'failed';
   if (state.includes('updat') || state.includes('config')) return 'updating';
   return 'degraded';

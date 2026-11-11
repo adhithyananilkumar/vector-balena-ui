@@ -104,12 +104,19 @@ export const isDeviceUpdating = (device: DeviceStatusRecord, imageInstalls: Devi
   });
 };
 
+/** The state of a device that is registered but has never connected. */
+export const AWAITING_FIRST_BOOT = 'Awaiting first boot';
+
 export const getDeviceOverallState = (device: DeviceStatusRecord, imageInstalls: DeviceStatusRecord[] = []): string => {
   if (!device) {
     return 'Unknown';
   }
 
   const apiOverallStatus = normalizeStatus(device['overall status']);
+  // registered but never connected: nothing is being configured, it is waiting to be powered on
+  if (apiOverallStatus === 'configuring' && !isDeviceOnline(device) && !device['last connectivity event']) {
+    return AWAITING_FIRST_BOOT;
+  }
   if (apiOverallStatus) {
     return apiOverallStatus
       .split('-')
@@ -130,7 +137,7 @@ export const getDeviceOverallState = (device: DeviceStatusRecord, imageInstalls:
 
   if (!online) {
     if (!hasLastConnectivityEvent) {
-      return 'Configuring';
+      return AWAITING_FIRST_BOOT;
     }
 
     return heartbeatState === 'online' ? 'Reduced functionality' : 'Disconnected';

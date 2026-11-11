@@ -77,7 +77,9 @@ export const OnlineField: React.FC<Omit<FunctionFieldProps<any>, 'render'>> = (p
             ? theme.palette.success.light
             : normalizedStatus === 'disconnected' || normalizedStatus === 'update failed'
               ? theme.palette.error.light
-              : theme.palette.warning.main;
+              : normalizedStatus === 'awaiting first boot'
+                ? theme.palette.text.secondary
+                : theme.palette.warning.main;
         return <strong style={{ color: statusColor }}>{status}</strong>;
       }}
     />

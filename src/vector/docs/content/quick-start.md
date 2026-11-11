@@ -57,7 +57,7 @@ The device type decides the CPU architecture, so choose the type that matches yo
 
 ## 5. Create the flash image
 
-Open **Add device**, choose the fleet, balenaOS version, network and mode, then download the image. It goes straight to your computer (you can choose the folder in Chrome or Edge) and is not stored on the server. See [Add and flash a device](doc:add-device).
+Open **Add device** and follow the four steps: fleet and OS, mode and network, add the device, then install the OS. The OS is saved once in a folder you choose on your computer and is not stored on the server. See [Add and flash a device](doc:add-device).
 
 ## 7. Flash and boot
 

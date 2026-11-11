@@ -326,6 +326,7 @@ export const downloadResumable = async (options: ResumableDownload): Promise<num
               break;
             }
             if (chunk.done) break;
+            if (signal?.aborted) throw new SaveCancelledError(); // do not rely on the network layer to report the abort
             await writer.write(chunk.value); // a disk error here is not retried: it is thrown as it is
             written += chunk.value.byteLength;
             received += chunk.value.byteLength;

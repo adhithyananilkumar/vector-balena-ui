@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  AWAITING_FIRST_BOOT,
   deviceOnlineStatusField,
   getDeviceOverallState,
   isDeviceOnline,
@@ -51,4 +52,27 @@ test('Host OS progress is updating rather than initial provisioning and does not
     }),
     'Operational',
   );
+});
+
+test('a device that has never connected is awaiting its first boot, whichever way the status is derived', () => {
+  const never = {
+    [deviceOnlineStatusField]: usesVpnOnlineStatus ? false : 'offline',
+    'api heartbeat state': 'unknown',
+    'last connectivity event': null,
+  };
+  assert.equal(getDeviceOverallState(never), AWAITING_FIRST_BOOT);
+  assert.equal(getDeviceOverallState({ ...never, 'overall status': 'configuring' }), AWAITING_FIRST_BOOT);
+  assert.equal(isDeviceOnline(never), false);
+});
+
+test('"configuring" stays for a device that is connected and applying its configuration, and "disconnected" for one that was online', () => {
+  const connected = {
+    [deviceOnlineStatusField]: usesVpnOnlineStatus ? true : 'online',
+    'api heartbeat state': 'online',
+    'last connectivity event': '2026-10-09T00:00:00Z',
+    'overall status': 'configuring',
+  };
+  assert.equal(getDeviceOverallState(connected), 'Configuring');
+  const wasOnline = { ...connected, [deviceOnlineStatusField]: usesVpnOnlineStatus ? false : 'offline', 'api heartbeat state': 'offline', 'overall status': undefined };
+  assert.equal(getDeviceOverallState(wasOnline), 'Disconnected');
 });

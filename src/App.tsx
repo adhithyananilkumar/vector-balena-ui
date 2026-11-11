@@ -72,6 +72,7 @@ import versions from './versions';
 import environment from './lib/reactAppEnv';
 import ThemeModeProvider, { useThemeMode } from './ui/ThemeModeProvider';
 import VectorTopbar from './vector/layout/VectorTopbar';
+import TransferTray from './vector/components/TransferTray';
 import { withSheets } from './vector/layout/sheet';
 
 const httpClient = (url: string, options: Options = {}): ReturnType<typeof fetchUtils.fetchJson> => {
@@ -119,6 +120,7 @@ const treeLayout: React.FC<React.ComponentProps<typeof Layout>> = (props) => {
   return (
     <>
       <Layout {...props} sidebar={VectorSidebar} appBar={VectorTopbar} />
+      <TransferTray />
       <CssBaseline />
     </>
   );

@@ -14,6 +14,7 @@ import { BrandMark, lookupDeviceType } from '../vector/components/brands';
 import { Button } from '../vector/components/button';
 import { VxScope } from '../vector/components/scope';
 import DeleteFleetButton from './DeleteFleetButton';
+import { AWAITING_FIRST_BOOT, getDeviceOverallState, isDeviceOnline } from '../lib/deviceStatus';
 
 type Rec = RaRecord<any> & Record<string, any>;
 
@@ -50,7 +51,7 @@ const forFleet = (facts: Facts, fleet: Rec) => {
   return {
     devices,
     releases,
-    online: devices.filter((device) => flag(device['is online'])).length,
+    online: devices.filter((device) => isDeviceOnline(device)).length,
     type,
     organization,
     target: flag(fleet['should track latest release']) ? latest : (target ?? latest),
@@ -99,7 +100,7 @@ const FleetCard: React.FC<{ fleet: Rec; facts: Facts; onInfo: () => void }> = ({
               <>
                 {info.devices.length}
                 {info.devices.length > 0 && (
-                  <span className='ml-1.5 text-xs font-medium text-success'>{info.online} online</span>
+                  <span className={`ml-1.5 text-xs font-medium ${info.online > 0 ? 'text-success' : 'text-muted-foreground'}`}>{info.online} online</span>
                 )}
               </>
             }
@@ -214,7 +215,8 @@ const FleetInfo: React.FC<{ fleet: Rec; facts: Facts; onClose: () => void }> = (
               <ul className='divide-y divide-border border border-border'>
                 {info.devices.map((device) => {
                   const running = info.releases.find((release) => release.id === device['is running-release']);
-                  const online = flag(device['is online']);
+                  const online = isDeviceOnline(device);
+                  const waiting = getDeviceOverallState(device) === AWAITING_FIRST_BOOT;
                   return (
                     <li key={device.id}>
                       <Link
@@ -225,7 +227,7 @@ const FleetInfo: React.FC<{ fleet: Rec; facts: Facts; onClose: () => void }> = (
                         <span className='min-w-0 flex-1 truncate font-medium'>{device['device name'] ?? 'Unnamed'}</span>
                         <span className='hidden font-mono text-xs text-muted-foreground sm:block'>{String(device.uuid).slice(0, 7)}</span>
                         <span className='w-32 truncate text-right text-xs text-muted-foreground'>{releaseName(running)}</span>
-                        <Badge variant={online ? 'success' : 'default'}>{online ? 'Online' : 'Offline'}</Badge>
+                        <Badge variant={online ? 'success' : 'default'}>{online ? 'Online' : waiting ? 'Awaiting first boot' : 'Offline'}</Badge>
                       </Link>
                     </li>
                   );

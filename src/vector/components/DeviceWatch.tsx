@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useGetList } from 'react-admin';
 import { CheckCircle2, CircleDashed, Loader2, Wifi, WifiOff } from 'lucide-react';
-import { isDeviceOnline } from '../../lib/deviceStatus';
+import { getDeviceOverallState, isDeviceOnline } from '../../lib/deviceStatus';
 import { cn } from '../lib/utils';
 
 const microLabel = 'font-mono text-[10.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase';
@@ -27,7 +27,9 @@ const DeviceWatch: React.FC<{
   since: number;
   /** What was made, for the first step. */
   made: 'image' | 'config';
-}> = ({ fleetId, fleetName, expectedUuid, since, made }) => {
+  /** Hide the instructions and show only the live status (right after a device is added). */
+  statusOnly?: boolean;
+}> = ({ fleetId, fleetName, expectedUuid, since, made, statusOnly = false }) => {
   const { data, isPending } = useGetList(
     'device',
     { pagination: { page: 1, perPage: 100 }, sort: { field: 'id', order: 'DESC' }, filter: { 'belongs to-application': fleetId } },
@@ -61,17 +63,21 @@ const DeviceWatch: React.FC<{
 
   return (
     <div className='grid gap-3 border border-input px-3.5 py-3' aria-live='polite'>
-      <span className={microLabel}>What happens next</span>
-      <ol className='grid gap-1.5 text-[13px]'>
-        {steps.map((step, index) => (
-          <li key={step} className='flex gap-2'>
-            <span className='mt-px font-mono text-xs text-muted-foreground'>{index + 1}.</span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
+      {!statusOnly && (
+        <>
+          <span className={microLabel}>What happens next</span>
+          <ol className='grid gap-1.5 text-[13px]'>
+            {steps.map((step, index) => (
+              <li key={step} className='flex gap-2'>
+                <span className='mt-px font-mono text-xs text-muted-foreground'>{index + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
 
-      <div className='grid gap-1.5 border-t border-border pt-3'>
+      <div className={cn('grid gap-1.5', !statusOnly && 'border-t border-border pt-3')}>
         <span className={microLabel}>Device status</span>
         {shown.length === 0 ? (
           <p className='flex items-center gap-2 text-[13px] text-muted-foreground'>
@@ -94,7 +100,7 @@ const DeviceWatch: React.FC<{
                   </Link>
                   <code className='text-xs text-muted-foreground'>{text(device.uuid).slice(0, 7)}</code>
                   <span className={cn('text-xs', online ? 'text-success' : 'text-muted-foreground')}>
-                    {online ? 'Online' : 'Registered, not online yet (waiting for its first boot)'}
+                    {online ? 'Online' : getDeviceOverallState(device) === 'Awaiting first boot' ? 'Added, awaiting its first boot' : getDeviceOverallState(device)}
                   </span>
                 </li>
               );

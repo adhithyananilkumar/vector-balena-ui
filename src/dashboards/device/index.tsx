@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Show } from 'react-admin';
 import DashboardLayout from './dashboardLayout';
+import DeviceInstall from './DeviceInstall';
 import { useParams } from 'react-router-dom';
 import { DeviceRefreshProvider } from '../../ui/DeviceRefreshContext';
 
@@ -15,7 +16,10 @@ const DeviceDashboard: React.FC = () => {
         actions={false}
         queryOptions={{ refetchInterval: false, refetchOnMount: false }}
       >
-        <DashboardLayout />
+        <>
+          <DeviceInstall />
+          <DashboardLayout />
+        </>
       </Show>
     </DeviceRefreshProvider>
   );

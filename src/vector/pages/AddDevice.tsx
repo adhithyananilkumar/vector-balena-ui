@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Title, useGetList } from 'react-admin';
-import { CheckCircle2, FileJson, FolderOpen, HardDriveDownload, Loader2, Trash2, TriangleAlert, Wand2, X } from 'lucide-react';
+import { Title, useDataProvider, useGetList } from 'react-admin';
+import { CheckCircle2, FileJson, FolderOpen, HardDriveDownload, Loader2, Trash2, TriangleAlert, Wand2 } from 'lucide-react';
 import { BrandMark, lookupDeviceType } from '../components/brands';
 import DeviceWatch from '../components/DeviceWatch';
+import TransferProgress from '../components/TransferProgress';
 import { RichSelect, type RichOption } from '../components/rich-select';
 import { Button } from '../components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/card';
@@ -15,62 +16,36 @@ import { authFetch, formatBytes } from '../lib/api';
 import { cn } from '../lib/utils';
 import { serverUrl } from '../../lib/serverUrl';
 import {
-  baseImageFileName,
   canPickFolder,
   chooseFolder,
-  clearlyTooLittleSpace,
-  createFlashReadyImage,
   describeSaveError,
-  downloadResumable,
   downloadWithBrowser,
-  ensureFolderAccess,
   findBaseImage,
-  flashReadyFileName,
   forgetFolder,
-  formatDuration,
   listBaseImages,
   loadSavedFolder,
   probeFolder,
   removeBaseImage,
-  saveBaseImageMeta,
   saveFolder,
-  trackProgress,
-  uniqueFileName,
-  verifyFlashReady,
-  verifySavedFile,
   type BaseImageStatus,
-  type BootPatch,
   type LocalBaseImage,
-  type Progress,
   type SavableFolder,
   type SaveRecovery,
-  type Verification,
 } from '../lib/imageSave';
+import { transfers, useTransfers, type Transfer } from '../lib/transfers';
 
 interface Ticket {
   job: { id: string; fileName: string; deviceUuid?: string };
   downloadPath: string;
-  sizeBytes?: number;
 }
 
-interface PatchResponse extends BootPatch {
-  fileName: string;
-  device?: { id: number; uuid: string };
-  sizeBytes?: number;
+interface AddedDevice {
+  id: number;
+  uuid: string;
+  name?: string;
 }
 
-type Provisioning = 'fleet' | 'new' | 'existing';
-type Operation = 'base' | 'image' | 'config' | 'stream';
-
-interface Outcome {
-  kind: 'image' | 'config' | 'base' | 'stream';
-  fileName: string;
-  bytes?: number;
-  where?: string;
-  verification?: Verification;
-  deviceUuid?: string;
-  at: number;
-}
+type Mode = 'new' | 'existing' | 'fleet';
 
 const microLabel = 'font-mono text-[10.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase';
 
@@ -117,10 +92,57 @@ const saveJson = (data: unknown, fileName: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-/** Appends the resume position to a signed download link. */
-const withFrom = (path: string, from: number): string => serverUrl(`${path}${path.includes('?') ? '&' : '?'}from=${from}`);
+interface WizardStep {
+  n: number;
+  title: string;
+  summary: string;
+  state: 'done' | 'todo';
+  locked: boolean;
+  busy?: boolean;
+}
 
-const Step: React.FC<{ n: number; title: string; state?: 'done' | 'todo' | 'blocked'; children: React.ReactNode }> = ({ n, title, state = 'todo', children }) => (
+/** The sections of the page as a list: where you are, what is finished, and the answer given in each. */
+const Stepper: React.FC<{ steps: WizardStep[]; current: number; onGo: (n: number) => void }> = ({ steps, current, onGo }) => (
+  <nav aria-label='Add device steps' className='lg:sticky lg:top-20'>
+    <ol className='grid gap-1'>
+      {steps.map((item) => {
+        const active = item.n === current;
+        return (
+          <li key={item.n}>
+            <button
+              type='button'
+              disabled={item.locked}
+              aria-current={active ? 'step' : undefined}
+              onClick={() => onGo(item.n)}
+              className={cn(
+                'flex w-full items-start gap-3 border px-3 py-2.5 text-left transition-colors outline-none focus-visible:outline-2 focus-visible:outline-ring',
+                active ? 'border-accent bg-accent/[0.07]' : 'border-transparent hover:border-input',
+                item.locked && 'cursor-not-allowed opacity-50 hover:border-transparent',
+              )}
+            >
+              <span
+                className={cn(
+                  'mt-0.5 grid size-6 shrink-0 place-items-center border font-mono text-[11px]',
+                  item.state === 'done' ? 'border-success text-success' : active ? 'border-accent text-accent' : 'border-input text-muted-foreground',
+                )}
+              >
+                {item.busy ? <Loader2 className='size-3.5 animate-spin' aria-hidden /> : item.state === 'done' ? <CheckCircle2 className='size-3.5' aria-hidden /> : item.n}
+              </span>
+              <span className='min-w-0'>
+                <span className='block text-sm font-medium'>{item.title}</span>
+                <span className='block truncate text-xs text-muted-foreground' title={item.summary}>
+                  {item.summary}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  </nav>
+);
+
+const Step: React.FC<{ n: number | string; title: string; state?: 'done' | 'todo' | 'blocked'; children: React.ReactNode }> = ({ n, title, state = 'todo', children }) => (
   <div className={cn('grid gap-2 border px-3.5 py-3', state === 'done' ? 'border-success/40' : 'border-input', state === 'blocked' && 'opacity-60')}>
     <span className='flex items-center gap-2 text-sm font-medium'>
       <span className={cn('grid size-5 place-items-center border font-mono text-[11px]', state === 'done' ? 'border-success text-success' : 'border-input text-muted-foreground')}>
@@ -132,32 +154,101 @@ const Step: React.FC<{ n: number; title: string; state?: 'done' | 'todo' | 'bloc
   </div>
 );
 
+/** What went wrong in a transfer, with the buttons that fix it. */
+const TransferFailure: React.FC<{
+  transfer: Transfer;
+  onChooseFolder: () => void;
+  onRetry: () => void;
+  onRedownload: () => void;
+  disabled: boolean;
+}> = ({ transfer, onChooseFolder, onRetry, onRedownload, disabled }) => {
+  const error = transfer.error;
+  if (!error) return null;
+  const recovery: SaveRecovery = error.recovery;
+  return (
+    <div role='alert' className='grid gap-2 border border-destructive/40 px-3 py-2.5 text-xs text-destructive'>
+      <p className='flex items-start gap-2'>
+        <TriangleAlert className='mt-0.5 size-3.5 shrink-0' aria-hidden />
+        <span>{error.message}</span>
+      </p>
+      {error.registeredDevice && (
+        <p className='text-foreground'>
+          The device <code>{error.registeredDevice.slice(0, 7)}</code> was already added to your fleet, so nothing is lost: try again and the image is made for the same device.
+        </p>
+      )}
+      <span className='flex flex-wrap gap-2'>
+        {recovery === 'choose-folder' && (
+          <Button variant='outline' size='sm' disabled={disabled} onClick={onChooseFolder}>
+            Choose another folder
+          </Button>
+        )}
+        {recovery === 'redownload' && (
+          <Button variant='outline' size='sm' disabled={disabled} onClick={onRedownload}>
+            Download the base image again
+          </Button>
+        )}
+        {recovery !== 'redownload' && (
+          <Button variant='outline' size='sm' disabled={disabled} onClick={onRetry}>
+            Try again
+          </Button>
+        )}
+        <Button variant='ghost' size='sm' onClick={() => transfers.dismiss(transfer.id)}>
+          Dismiss
+        </Button>
+      </span>
+    </div>
+  );
+};
+
+/**
+ * What was entered so far. It lives in memory for the session, so leaving the page (a download keeps going in the
+ * corner) and coming back finds the same step and answers. The Wi-Fi password is never written to storage.
+ */
+interface Draft {
+  fleetId?: string;
+  version?: string;
+  development?: 'production' | 'development';
+  network?: 'ethernet' | 'wifi';
+  wifiSsid?: string;
+  wifiKey?: string;
+  dnsServers?: string;
+  mode?: Mode;
+  existingUuid?: string;
+  added?: AddedDevice | null;
+  step?: number;
+  maxStep?: number;
+}
+let draft: Draft = {};
+
 const AddDevice: React.FC = () => {
+  const dataProvider = useDataProvider();
   const { data: fleets } = useGetList('application', { pagination: { page: 1, perPage: 1000 }, sort: { field: 'app name', order: 'ASC' } });
   const { data: deviceTypes } = useGetList('device type', { pagination: { page: 1, perPage: 1000 }, sort: { field: 'slug', order: 'ASC' } });
 
   const [searchParams] = useSearchParams();
-  const [fleetId, setFleetId] = useState(() => searchParams.get('fleet') ?? '');
+  const [fleetId, setFleetId] = useState(() => searchParams.get('fleet') ?? draft.fleetId ?? '');
   const [versions, setVersions] = useState<string[]>([]);
-  const [version, setVersion] = useState('');
+  const [version, setVersion] = useState(draft.version ?? '');
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [loadingVersions, setLoadingVersions] = useState(false);
-  const [development, setDevelopment] = useState<'production' | 'development'>('production');
-  const [provisioning, setProvisioning] = useState<Provisioning>('fleet');
-  const [existingUuid, setExistingUuid] = useState('');
-  const [network, setNetwork] = useState<'ethernet' | 'wifi'>('ethernet');
-  const [wifiSsid, setWifiSsid] = useState('');
-  const [wifiKey, setWifiKey] = useState('');
-  const [dnsServers, setDnsServers] = useState('');
+  const [development, setDevelopment] = useState<'production' | 'development'>(draft.development ?? 'production');
+  const [network, setNetwork] = useState<'ethernet' | 'wifi'>(draft.network ?? 'ethernet');
+  const [wifiSsid, setWifiSsid] = useState(draft.wifiSsid ?? '');
+  const [wifiKey, setWifiKey] = useState(draft.wifiKey ?? '');
+  const [dnsServers, setDnsServers] = useState(draft.dnsServers ?? '');
+
+  const [mode, setMode] = useState<Mode>(searchParams.get('device') ? 'existing' : (draft.mode ?? 'new'));
+  const [deviceName, setDeviceName] = useState('');
+  const [added, setAdded] = useState<AddedDevice | null>(draft.added ?? null);
+  const [adding, setAdding] = useState(false);
+  const [existingUuid, setExistingUuid] = useState(searchParams.get('device') ?? draft.existingUuid ?? '');
 
   const [error, setError] = useState<string | null>(null);
-  const [recovery, setRecovery] = useState<SaveRecovery>('none');
   const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState<Operation | null>(null);
-  const [progress, setProgress] = useState<{ label: string; value: Progress } | null>(null);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const [configBusy, setConfigBusy] = useState(false);
+  const [configDone, setConfigDone] = useState<{ at: number; uuid?: string } | null>(null);
+  const [streamBusy, setStreamBusy] = useState(false);
+  const [streamDone, setStreamDone] = useState<{ at: number; fileName: string } | null>(null);
 
   const [folder, setFolder] = useState<SavableFolder | undefined>();
   const [folderAccess, setFolderAccess] = useState<PermissionState | undefined>();
@@ -172,11 +263,19 @@ const AddDevice: React.FC = () => {
     return String((deviceTypes ?? []).find((type) => type.id === id)?.slug ?? '');
   }, [fleet, deviceTypes]);
 
-  const { data: fleetDevices } = useGetList(
+  const { data: fleetDevices, refetch: refetchDevices } = useGetList(
     'device',
     { pagination: { page: 1, perPage: 200 }, sort: { field: 'device name', order: 'ASC' }, filter: { 'belongs to-application': Number(fleetId) } },
-    { enabled: Boolean(fleetId) && provisioning === 'existing' },
+    { enabled: Boolean(fleetId) && mode === 'existing' },
   );
+
+  const allTransfers = useTransfers();
+  const running = allTransfers.find((item) => item.state === 'running');
+  const baseKey = `base:${deviceType}:${version}`;
+  const imageKey = `image:${deviceType}:${version}:${fleetId}`;
+  const baseTransfer = allTransfers.find((item) => item.key === baseKey);
+  const imageTransfer = allTransfers.find((item) => item.key === imageKey);
+  const elsewhere = running && running.key !== baseKey && running.key !== imageKey ? running : undefined;
 
   useEffect(() => {
     void loadSavedFolder().then(async (saved) => {
@@ -185,21 +284,42 @@ const AddDevice: React.FC = () => {
     });
   }, []);
 
+  // a transfer that found the remembered folder unusable: stop offering it
+  useEffect(() => {
+    if (allTransfers.some((item) => item.error?.forgetFolder)) {
+      setFolder(undefined);
+      setBase(undefined);
+    }
+  }, [allTransfers]);
+
+  // a device added for one fleet is not this fleet's any more when the fleet changes
+  const lastFleet = useRef(fleetId);
+  useEffect(() => {
+    if (lastFleet.current === fleetId) return;
+    lastFleet.current = fleetId;
+    setAdded(null);
+    setExistingUuid('');
+    setConfigDone(null);
+    setStreamDone(null);
+  }, [fleetId]);
+
   // versions for the fleet's device type (only the ones balena really offers, so this takes a few seconds)
+  const wantedVersion = useRef(draft.version ?? '');
   useEffect(() => {
     setVersions([]);
-    setVersion('');
     setVersionsError(null);
-    setTicket(null);
-    setOutcome(null);
-    if (!deviceType) return undefined;
+    if (!deviceType) {
+      setVersion('');
+      return undefined;
+    }
     let cancelled = false;
     setLoadingVersions(true);
     authFetch<{ versions: string[] }>(`/image-maker/versions?deviceType=${encodeURIComponent(deviceType)}`)
       .then((result) => {
         if (cancelled) return;
         setVersions(result.versions);
-        setVersion(result.versions[0] ?? '');
+        setVersion(result.versions.includes(wantedVersion.current) ? wantedVersion.current : (result.versions[0] ?? ''));
+        wantedVersion.current = '';
       })
       .catch((e: unknown) => !cancelled && setVersionsError(e instanceof Error ? e.message : 'Unable to list versions.'))
       .finally(() => !cancelled && setLoadingVersions(false));
@@ -225,7 +345,7 @@ const AddDevice: React.FC = () => {
   }, [folder, deviceType, version]);
   useEffect(() => {
     void refreshLibrary();
-  }, [refreshLibrary]);
+  }, [refreshLibrary, baseTransfer?.state]);
 
   const fleetOptions = useMemo<RichOption[]>(
     () =>
@@ -241,9 +361,12 @@ const AddDevice: React.FC = () => {
     [fleets, deviceTypes],
   );
 
+  const targetUuid = mode === 'existing' ? existingUuid : mode === 'new' ? added?.uuid ?? '' : '';
+  const targetReady = mode === 'fleet' || Boolean(targetUuid);
   const wifiMissing = network === 'wifi' && !wifiSsid.trim();
-  const existingMissing = provisioning === 'existing' && !existingUuid;
-  const ready = !!fleet && !!deviceType && !!version && !wifiMissing && !existingMissing;
+  const choicesReady = !!fleet && !!deviceType && !!version && !wifiMissing;
+  const ready = choicesReady && targetReady;
+  const canAdd = !!fleet && !!deviceType && !!version && !adding;
 
   const payload = useCallback(
     () => ({
@@ -251,26 +374,19 @@ const AddDevice: React.FC = () => {
       deviceType,
       version,
       developmentMode: development === 'development',
-      provisioning: provisioning === 'fleet' ? 'fleet' : 'device',
-      ...(provisioning === 'existing' ? { deviceUuid: existingUuid } : {}),
+      provisioning: mode === 'fleet' ? 'fleet' : 'device',
+      ...(mode !== 'fleet' && targetUuid ? { deviceUuid: targetUuid } : {}),
       network,
       ...(network === 'wifi' ? { wifiSsid: wifiSsid.trim(), wifiKey } : {}),
       ...(dnsServers.trim() ? { dnsServers: dnsServers.trim() } : {}),
     }),
-    [fleetId, deviceType, version, development, provisioning, existingUuid, network, wifiSsid, wifiKey, dnsServers],
+    [fleetId, deviceType, version, development, mode, targetUuid, network, wifiSsid, wifiKey, dnsServers],
   );
 
-  // a prepared download belongs to the answers it was prepared with: change one and it has to be prepared again
-  const answers = JSON.stringify(payload());
-  useEffect(() => {
-    setTicket(null);
-  }, [answers]);
-
-  const fail = (cause: unknown, where?: string) => {
+  const failWith = (cause: unknown, where?: string) => {
     const problem = describeSaveError(cause, where);
     if (problem.recovery === 'none') return;
     setError(problem.message);
-    setRecovery(problem.recovery);
     if (problem.forgetFolder) {
       setFolder(undefined);
       setBase(undefined);
@@ -278,38 +394,40 @@ const AddDevice: React.FC = () => {
     }
   };
 
-  const begin = (operation: Operation) => {
+  const addDeviceToFleet = async () => {
     setError(null);
-    setRecovery('none');
-    setNotice(null);
-    setOutcome(null);
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setBusy(operation);
-    return controller;
-  };
-  const finish = () => {
-    abortRef.current = null;
-    setProgress(null);
-    setBusy(null);
+    setAdding(true);
+    try {
+      const result = await authFetch<{ device: AddedDevice }>('/image-maker/devices', {
+        method: 'POST',
+        body: JSON.stringify({ appId: Number(fleetId), deviceType, version, ...(deviceName.trim() ? { name: deviceName.trim() } : {}) }),
+      });
+      setAdded(result.device);
+      setDeviceName('');
+      void refetchDevices();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to add the device.');
+    } finally {
+      setAdding(false);
+    }
   };
 
-  /** The remembered folder must be usable now: allowed, present and writable. Checked before anything is prepared. */
-  const useFolder = async (): Promise<SavableFolder> => {
-    if (!folder) throw new Error('Choose a folder for your OS images first.');
-    if (!(await ensureFolderAccess(folder))) {
-      const denied = new Error('denied');
-      denied.name = 'NotAllowedError';
-      throw denied;
+  const removeAdded = async () => {
+    if (!added) return;
+    if (!window.confirm(`Remove the device ${added.name ?? added.uuid.slice(0, 7)} from ${fleetName}? Nothing has booted with it yet.`)) return;
+    setError(null);
+    try {
+      await dataProvider.delete('device', { id: added.id, previousData: { id: added.id } });
+      setAdded(null);
+      setConfigDone(null);
+      void refetchDevices();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'The device could not be removed.');
     }
-    await probeFolder(folder);
-    setFolderAccess('granted');
-    return folder;
   };
 
   const pickFolder = async () => {
     setError(null);
-    setRecovery('none');
     try {
       const chosen = await chooseFolder();
       await probeFolder(chosen); // fail now, not after something has been prepared
@@ -317,7 +435,7 @@ const AddDevice: React.FC = () => {
       setFolderAccess('granted');
       await saveFolder(chosen);
     } catch (e) {
-      fail(e, 'the folder you chose');
+      failWith(e, 'the folder you chose');
     }
   };
 
@@ -329,116 +447,48 @@ const AddDevice: React.FC = () => {
     void forgetFolder();
   };
 
-  const track = (label: string) => {
-    let tracker = trackProgress(undefined);
-    return {
-      set: (written: number, total?: number) => setProgress({ label, value: tracker(written, total) }),
-      reset: (total?: number) => {
-        tracker = trackProgress(total);
-      },
-    };
+  const startBase = () => {
+    if (!folder) return;
+    setError(null);
+    const result = transfers.startBase({ folder, deviceType, version });
+    if (!result.ok) setNotice(result.reason === 'same' ? 'This download is already running.' : `Another download is running (${result.running.title}). It must finish or be cancelled first.`);
+    else setNotice(null);
   };
 
-  /** Downloads the balenaOS base image into the images folder, once; later images are made from it without downloading. */
-  const downloadBase = async () => {
-    const controller = begin('base');
-    let where = folder?.name;
-    try {
-      const target = await useFolder();
-      where = target.name;
-      if (await clearlyTooLittleSpace(2.5 * 1024 ** 3)) {
-        setNotice('Your browser reports very little free space. The image needs roughly 2 to 8 GB; the save fails cleanly if it runs out.');
-      }
-      const link = await authFetch<Ticket>('/image-maker/os-downloads', { method: 'POST', body: JSON.stringify({ deviceType, version }) });
-      const name = baseImageFileName(deviceType, version);
-      const file = await target.getFileHandle(name, { create: true }); // appears only when complete
-      const progressFor = track('Downloading balenaOS');
-      progressFor.reset(link.sizeBytes);
-      const bytes = await downloadResumable({
-        urlFor: (from) => withFrom(link.downloadPath, from),
-        file,
-        knownTotal: link.sizeBytes,
-        signal: controller.signal,
-        onProgress: progressFor.set,
-        onRetry: (info) =>
-          setNotice(info.reason === 'restarting from the beginning' ? 'Restarting the download from the beginning…' : `The connection was interrupted. Resuming from ${formatBytes(info.written)} (attempt ${info.attempt + 1})…`),
-      });
-      setNotice(null);
-      const verification = await verifySavedFile(file, bytes);
-      if (!verification.ok) throw new Error(`${verification.problem} Download the base image again.`);
-      await saveBaseImageMeta(target, name, { deviceType, version, size: bytes, savedAt: new Date().toISOString() });
-      setOutcome({ kind: 'base', fileName: name, bytes, where: target.name, verification, at: Date.now() });
-      await refreshLibrary();
-    } catch (e) {
-      fail(e, where);
-    } finally {
-      finish();
-    }
-  };
-
-  /** Makes the flash-ready image on this computer from the local base image, registering a device first when asked. */
-  const createImage = async () => {
-    const controller = begin('image');
-    let registered: string | undefined;
-    let where = folder?.name;
-    try {
-      const target = await useFolder();
-      where = target.name;
-      const status = await findBaseImage(target, deviceType, version);
-      if (status.state !== 'present') throw new Error('The base image is not on this computer yet. Download it first.');
-      setProgress({ label: 'Preparing the configuration', value: { written: 0, bytesPerSecond: 0 } });
-      const patch = await authFetch<PatchResponse>('/image-maker/boot-patch', { method: 'POST', body: JSON.stringify(payload()) });
-      registered = patch.device?.uuid;
-      const name = await uniqueFileName(target, flashReadyFileName(fleetName, deviceType, version)); // never replaces an image
-      const file = await target.getFileHandle(name, { create: true });
-      const progressFor = track('Creating the flash-ready image');
-      progressFor.reset(status.file.size);
-      const bytes = await createFlashReadyImage({
-        base: status.file,
-        target: file,
-        patch,
-        signal: controller.signal,
-        onProgress: (copied, total) => progressFor.set(copied, total),
-      });
-      const verification = await verifyFlashReady(file, bytes, patch);
-      setOutcome({ kind: 'image', fileName: name, bytes, where: target.name, verification, deviceUuid: registered, at: Date.now() });
-    } catch (e) {
-      fail(e, where);
-      if (registered) {
-        setNotice(
-          `The device ${registered.slice(0, 7)} was registered before this failed. Choose "Existing device" to make its image again without registering another.`,
-        );
-      }
-    } finally {
-      finish();
-    }
+  const startImage = () => {
+    if (!folder || !fleet) return;
+    setError(null);
+    const result = transfers.startImage({ folder, deviceType, version, fleetId: Number(fleetId), fleetName, payload: payload() });
+    if (!result.ok) setNotice(result.reason === 'same' ? 'This image is already being made.' : `Another download is running (${result.running.title}). It must finish or be cancelled first.`);
+    else setNotice(null);
   };
 
   const downloadConfig = async () => {
-    begin('config');
+    setError(null);
+    setConfigBusy(true); // independent of any large download that is running
     try {
       const config = await authFetch<{ uuid?: string }>('/image-maker/config', { method: 'POST', body: JSON.stringify(payload()) });
       saveJson(config, 'config.json');
-      setOutcome({ kind: 'config', fileName: 'config.json', deviceUuid: provisioning !== 'fleet' ? config.uuid : undefined, at: Date.now() });
+      setConfigDone({ at: Date.now(), uuid: mode !== 'fleet' ? config.uuid : undefined });
     } catch (e) {
-      fail(e);
-      setError((previous) => previous ?? 'Unable to generate the config.');
+      setError(e instanceof Error ? e.message : 'Unable to generate the config.');
     } finally {
-      finish();
+      setConfigBusy(false);
     }
   };
 
   /** Browsers that cannot write into a chosen folder: one download of the finished image, streamed by the server. */
   const downloadStreamed = async () => {
-    begin('stream');
+    setError(null);
+    setStreamBusy(true);
     try {
       const current = await authFetch<Ticket>('/image-maker/images', { method: 'POST', body: JSON.stringify(payload()) });
       downloadWithBrowser(serverUrl(current.downloadPath), current.job.fileName);
-      setOutcome({ kind: 'stream', fileName: current.job.fileName, where: "your browser's downloads folder", deviceUuid: current.job.deviceUuid, at: Date.now() });
+      setStreamDone({ at: Date.now(), fileName: current.job.fileName });
     } catch (e) {
-      fail(e);
+      setError(e instanceof Error ? e.message : 'Unable to prepare the image.');
     } finally {
-      finish();
+      setStreamBusy(false);
     }
   };
 
@@ -447,15 +497,91 @@ const AddDevice: React.FC = () => {
     try {
       await removeBaseImage(folder, name);
     } catch (e) {
-      fail(e, folder.name);
+      failWith(e, folder.name);
     }
     await refreshLibrary();
   };
 
+  // the wizard: one section at a time, and a later section opens only when the earlier ones are complete
+  const [step, setStep] = useState(draft.step ?? 1);
+  const [maxStep, setMaxStep] = useState(draft.maxStep ?? 1);
+  const step1Valid = Boolean(fleet && deviceType && version) && !loadingVersions;
+  const step2Valid = !wifiMissing;
+  const step3Valid = targetReady;
+  const validUntil = (n: number): boolean => (n <= 1 ? true : step1Valid && (n <= 2 || (step2Valid && (n <= 3 || step3Valid))));
+  const goTo = (n: number) => {
+    if (n < 1 || n > 4 || n > maxStep + 1 || !validUntil(n)) return;
+    setStep(n);
+    setMaxStep((current) => Math.max(current, n));
+  };
+  // clearing the fleet (or changing it to one without a device type) takes the user back to the start
+  useEffect(() => {
+    if (!step1Valid && !loadingVersions && step > 1) {
+      setStep(1);
+      setMaxStep(1);
+    }
+  }, [step1Valid, loadingVersions, step]);
+  useEffect(() => {
+    if (!step3Valid && step > 3) setStep(3);
+  }, [step3Valid, step]);
+
+  useEffect(() => {
+    draft = { fleetId, version, development, network, wifiSsid, wifiKey, dnsServers, mode, existingUuid, added, step, maxStep };
+  }, [fleetId, version, development, network, wifiSsid, wifiKey, dnsServers, mode, existingUuid, added, step, maxStep]);
+
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (deepLinked.current || !searchParams.get('device') || !step1Valid || !step2Valid || !existingUuid) return;
+    deepLinked.current = true;
+    setStep(4);
+    setMaxStep(4);
+  }, [searchParams, step1Valid, step2Valid, existingUuid]);
+
   const baseState = base === 'checking' || base === undefined ? base : base.state;
   const baseReady = baseState === 'present';
-  const working = busy !== null;
-  const progressPercent = progress?.value.percent;
+  const diskBusy = Boolean(running);
+  const imageDone = imageTransfer?.state === 'done' ? imageTransfer : undefined;
+
+  const wizardSteps: WizardStep[] = [
+    {
+      n: 1,
+      title: 'Fleet and operating system',
+      summary: fleet ? `${fleetName} · balenaOS ${version || '…'}` : 'Choose a fleet and a version',
+      state: step1Valid && maxStep > 1 ? 'done' : 'todo',
+      locked: false,
+    },
+    {
+      n: 2,
+      title: 'Mode and network',
+      summary: `${development === 'production' ? 'Production' : 'Development'} · ${network === 'wifi' ? `Wi-Fi ${wifiSsid.trim()}` : 'Ethernet'}`,
+      state: step2Valid && maxStep > 2 ? 'done' : 'todo',
+      locked: maxStep < 2 || !validUntil(2),
+    },
+    {
+      n: 3,
+      title: 'The device',
+      summary:
+        mode === 'fleet'
+          ? 'Many devices (fleet-wide image)'
+          : mode === 'new'
+            ? added
+              ? `${added.name ?? added.uuid.slice(0, 7)} added`
+              : 'Add a new device'
+            : existingUuid
+              ? `Registered ${existingUuid.slice(0, 7)}`
+              : 'Choose a registered device',
+      state: step3Valid && maxStep > 3 ? 'done' : 'todo',
+      locked: maxStep < 3 || !validUntil(3),
+    },
+    {
+      n: 4,
+      title: 'Install the OS',
+      summary: running ? `${running.label}${running.progress?.percent !== undefined ? ` · ${Math.floor(running.progress.percent)}%` : ''}` : imageDone ? 'Image saved' : 'Base image, image, config.json',
+      state: imageDone || configDone || streamDone ? 'done' : 'todo',
+      locked: !running && (maxStep < 4 || !validUntil(4)),
+      busy: Boolean(running),
+    },
+  ];
 
   return (
     <VxScope className='w-full pb-6'>
@@ -463,33 +589,14 @@ const AddDevice: React.FC = () => {
       {error && (
         <div role='alert' className='mb-4 flex items-start gap-2 border border-destructive/40 px-4 py-3 text-[13px] text-destructive'>
           <TriangleAlert className='mt-0.5 size-4 shrink-0' aria-hidden />
-          <div className='grid gap-2'>
-            <span>{error}</span>
-            {recovery !== 'none' && (
-              <span className='flex flex-wrap gap-2'>
-                {recovery === 'choose-folder' && folderPicker && (
-                  <Button variant='outline' size='sm' disabled={working} onClick={() => void pickFolder()}>
-                    Choose another folder
-                  </Button>
-                )}
-                {recovery === 'redownload' && (
-                  <Button variant='outline' size='sm' disabled={working || !folder} onClick={() => void downloadBase()}>
-                    Download the base image again
-                  </Button>
-                )}
-                {(recovery === 'allow-access' || recovery === 'retry' || recovery === 'choose-folder') && ready && (
-                  <Button variant='outline' size='sm' disabled={working} onClick={() => void (baseReady ? createImage() : downloadBase())}>
-                    Try again
-                  </Button>
-                )}
-              </span>
-            )}
-          </div>
+          <span>{error}</span>
         </div>
       )}
 
-      <div className='grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_420px]'>
-        <div className='grid gap-4'>
+      <div className='grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]'>
+        <Stepper steps={wizardSteps} current={step} onGo={goTo} />
+        <div className='grid max-w-3xl gap-4'>
+          {step === 1 && (
           <Card>
             <CardHeader>
               <div>
@@ -510,12 +617,7 @@ const AddDevice: React.FC = () => {
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='vx-ad-version'>balenaOS version</Label>
-                <Select
-                  id='vx-ad-version'
-                  value={version}
-                  onChange={(event) => setVersion(event.target.value)}
-                  disabled={!deviceType || loadingVersions || versions.length === 0}
-                >
+                <Select id='vx-ad-version' value={version} onChange={(event) => setVersion(event.target.value)} disabled={!deviceType || loadingVersions || versions.length === 0}>
                   {!deviceType && <option value=''>Choose a fleet first</option>}
                   {deviceType && loadingVersions && <option value=''>Checking balena for available versions…</option>}
                   {versions.map((candidate, index) => (
@@ -533,13 +635,30 @@ const AddDevice: React.FC = () => {
                 )}
                 {versionsError && <p className='text-xs text-destructive'>{versionsError}</p>}
               </div>
+          <div className='mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3'>
+            <span>
+              {1 > 1 && (
+                <Button variant='ghost' size='sm' onClick={() => goTo(0)}>
+                  Back
+                </Button>
+              )}
+            </span>
+            <span className='flex items-center gap-3'>
+              {!(step1Valid) && <span className='text-xs text-muted-foreground'>{loadingVersions ? 'Checking balena for versions…' : 'Choose a fleet and an OS version.'}</span>}
+              <Button variant='accent' size='sm' disabled={!(step1Valid)} onClick={() => goTo(2)}>
+                Continue
+              </Button>
+            </span>
+          </div>
             </CardContent>
           </Card>
 
+          )}
+          {step === 2 && (
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>2. Mode, device and network</CardTitle>
+                <CardTitle>2. Mode and network</CardTitle>
                 <CardDescription>Written into the device&apos;s config.json.</CardDescription>
               </div>
             </CardHeader>
@@ -555,33 +674,6 @@ const AddDevice: React.FC = () => {
                     { value: 'development', title: 'Development', hint: 'Local mode and open SSH, for testing.' },
                   ]}
                 />
-              </div>
-              <div className='grid gap-2'>
-                <Label>Which device is this for?</Label>
-                <Choice
-                  label='Provisioning'
-                  value={provisioning}
-                  onChange={setProvisioning}
-                  options={[
-                    { value: 'fleet', title: 'Any device (fleet-wide)', hint: 'One image for many devices. Each registers itself on first boot.' },
-                    { value: 'new', title: 'A new device', hint: 'Registers one device now. The image works for that device only.' },
-                    { value: 'existing', title: 'A registered device', hint: 'Make the image for a device that is already in this fleet.' },
-                  ]}
-                />
-                {provisioning === 'existing' && (
-                  <div className='grid gap-2 pt-1'>
-                    <Label htmlFor='vx-ad-device'>Device</Label>
-                    <Select id='vx-ad-device' value={existingUuid} onChange={(event) => setExistingUuid(event.target.value)} disabled={!fleetId}>
-                      <option value=''>{fleetId ? ((fleetDevices ?? []).length ? 'Choose a device…' : 'No devices in this fleet yet') : 'Choose a fleet first'}</option>
-                      {(fleetDevices ?? []).map((device) => (
-                        <option key={String(device.id)} value={String(device.uuid)}>
-                          {String(device['device name'] ?? device.uuid)} · {String(device.uuid).slice(0, 7)}
-                        </option>
-                      ))}
-                    </Select>
-                    <p className='text-xs text-muted-foreground'>A new key is created for that device and written into the image. Its old key keeps working until the device is reflashed.</p>
-                  </div>
-                )}
               </div>
               <div className='grid gap-2'>
                 <Label>Network</Label>
@@ -642,219 +734,354 @@ const AddDevice: React.FC = () => {
                 />
                 <p className='text-sm text-muted-foreground'>Only needed when your server names exist on a private DNS. Separate several addresses with commas.</p>
               </div>
+          <div className='mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3'>
+            <span>
+              {2 > 1 && (
+                <Button variant='ghost' size='sm' onClick={() => goTo(1)}>
+                  Back
+                </Button>
+              )}
+            </span>
+            <span className='flex items-center gap-3'>
+              {!(step2Valid) && <span className='text-xs text-muted-foreground'>{'Enter the Wi-Fi network name.'}</span>}
+              <Button variant='accent' size='sm' disabled={!(step2Valid)} onClick={() => goTo(3)}>
+                Continue
+              </Button>
+            </span>
+          </div>
             </CardContent>
           </Card>
-        </div>
 
-        <Card className='xl:sticky xl:top-20'>
-          <CardHeader>
-            <div>
-              <CardTitle>3. Get your files</CardTitle>
-              <CardDescription>The config contains a fleet key. Keep it private and do not share it.</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className='grid gap-3'>
-            {folderPicker ? (
-              <>
-                <Step n={1} title='Choose where images are kept' state={folder ? 'done' : 'todo'}>
-                  <p className='text-xs text-muted-foreground'>A folder on this computer. balenaOS is downloaded into it once and reused for every device, so it is not downloaded again.</p>
-                  <span className='flex items-center gap-2 text-sm'>
-                    <FolderOpen className='size-4 shrink-0 text-muted-foreground' aria-hidden />
-                    <span className='min-w-0 truncate' title={folder?.name}>
-                      {folder ? folder.name : 'No folder chosen yet'}
-                    </span>
-                  </span>
-                  {folder && folderAccess === 'prompt' && (
-                    <span className='text-xs text-muted-foreground'>The browser will ask you to allow access to this folder again when you continue.</span>
-                  )}
-                  {folder && folderAccess === 'denied' && <span className='text-xs text-destructive'>The browser has blocked this folder. Choose it again to allow access.</span>}
-                  <span className='flex flex-wrap gap-2'>
-                    <Button variant={folder ? 'outline' : 'accent'} size='sm' disabled={working} onClick={() => void pickFolder()}>
-                      {folder ? 'Change folder' : 'Choose a folder'}
-                    </Button>
-                    {folder && (
-                      <Button variant='ghost' size='sm' disabled={working} onClick={clearFolder}>
-                        Forget folder
-                      </Button>
-                    )}
-                  </span>
-                </Step>
-
-                <Step n={2} title={`Base image${version ? `: balenaOS ${version}` : ''}`} state={baseReady ? 'done' : folder && version ? 'todo' : 'blocked'}>
-                  {!folder || !version ? (
-                    <p className='text-xs text-muted-foreground'>{!folder ? 'Choose a folder first.' : 'Choose a fleet and a version first.'}</p>
-                  ) : baseState === 'checking' ? (
-                    <p className='flex items-center gap-2 text-xs text-muted-foreground'>
-                      <Loader2 className='size-3.5 animate-spin' aria-hidden />
-                      Looking in your folder…
-                    </p>
-                  ) : baseState === 'present' && base && typeof base === 'object' && base.state === 'present' ? (
-                    <>
-                      <p className='text-xs text-success'>
-                        On this computer: <code>{base.name}</code> ({formatBytes(base.file.size)}). It will be reused, nothing to download.
-                      </p>
-                      <span>
-                        <Button variant='ghost' size='sm' disabled={working} onClick={() => void downloadBase()}>
-                          Download it again
-                        </Button>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <p className='text-xs text-muted-foreground'>
-                        {baseState === 'incomplete'
-                          ? 'A file with this name is in the folder but it is not complete. Download it again.'
-                          : 'Not on this computer yet. The download is about 200 MB and takes up to 1 GB on disk. It is checked against balena\'s checksum.'}
-                      </p>
-                      <span>
-                        <Button variant={ready || deviceType ? 'accent' : 'outline'} size='sm' disabled={working || !deviceType || !version} onClick={() => void downloadBase()}>
-                          {busy === 'base' ? <Loader2 className='animate-spin' aria-hidden /> : <HardDriveDownload aria-hidden />}
-                          Download base image
-                        </Button>
-                      </span>
-                    </>
-                  )}
-                </Step>
-
-                <Step n={3} title='Create the flash-ready image' state={outcome?.kind === 'image' ? 'done' : baseReady && ready ? 'todo' : 'blocked'}>
-                  <p className='text-xs text-muted-foreground'>
-                    Copies the base image and writes this fleet&apos;s configuration into the copy, here on your computer.
-                    {provisioning === 'new' && ' A new device is registered now.'}
-                  </p>
-                  <span>
-                    <Button variant='accent' size='sm' disabled={working || !baseReady || !ready} onClick={() => void createImage()}>
-                      {busy === 'image' ? <Loader2 className='animate-spin' aria-hidden /> : <Wand2 aria-hidden />}
-                      Create image
-                    </Button>
-                  </span>
-                  {baseReady && !ready && <span className='text-xs text-muted-foreground'>Finish the choices on the left first.</span>}
-                </Step>
-              </>
-            ) : (
-              <Step n={1} title='Download the flash-ready image' state={outcome?.kind === 'stream' ? 'done' : ready ? 'todo' : 'blocked'}>
-                <p className='text-xs text-muted-foreground'>
-                  This browser cannot keep a library of images in a folder, so the finished image is streamed to your downloads folder in one go. Use Chrome or Edge to keep a base image and
-                  reuse it.
-                </p>
-                <span>
-                  <Button variant='accent' size='sm' disabled={working || !ready} onClick={() => void downloadStreamed()}>
-                    {busy === 'stream' ? <Loader2 className='animate-spin' aria-hidden /> : <HardDriveDownload aria-hidden />}
-                    Download flash-ready image
-                  </Button>
-                </span>
-              </Step>
-            )}
-
-            <div className='grid gap-2 border-t border-border pt-3'>
-              <span className={microLabel}>Already flashed a drive?</span>
-              <Button variant='outline' disabled={working || !ready} onClick={() => void downloadConfig()}>
-                {busy === 'config' ? <Loader2 className='animate-spin' aria-hidden /> : <FileJson aria-hidden />}
-                Download config.json only
-              </Button>
-              <p className='text-xs text-muted-foreground'>
-                Replaces <code>config.json</code> on the boot partition of a drive that already runs balenaOS. It does not register a device by itself: with &quot;Any device&quot; the device registers on its
-                first boot.
-              </p>
-            </div>
-
-            {notice && <p className='border border-input px-3 py-2 text-xs'>{notice}</p>}
-
-            {working && progress && (
-              <div className='grid gap-2 border border-accent/40 px-3.5 py-3'>
-                <p className='flex items-center gap-2 text-sm'>
-                  <Loader2 className='size-4 animate-spin' aria-hidden />
-                  {progress.label}
-                  {progressPercent !== undefined ? ` · ${Math.floor(progressPercent)}%` : ''}
-                </p>
-                {progressPercent !== undefined && (
-                  <div className='h-1.5 w-full bg-foreground/10' role='progressbar' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(progressPercent)}>
-                    <div className='h-full bg-accent transition-[width]' style={{ width: `${progressPercent}%` }} />
-                  </div>
-                )}
-                <p className='text-xs text-muted-foreground'>
-                  {formatBytes(progress.value.written)}
-                  {progress.value.total ? ` of ${formatBytes(progress.value.total)}` : ''}
-                  {progress.value.bytesPerSecond > 0 ? ` · ${formatBytes(progress.value.bytesPerSecond)}/s` : ''}
-                  {progress.value.etaSeconds !== undefined ? ` · about ${formatDuration(progress.value.etaSeconds)} left` : ''}
-                </p>
-                <p className='text-xs text-muted-foreground'>If the connection drops it continues where it stopped. Keep this page open.</p>
-                <span>
-                  <Button variant='outline' size='sm' onClick={() => abortRef.current?.abort()}>
-                    <X aria-hidden />
-                    Cancel
-                  </Button>
-                </span>
+          )}
+          {step === 3 && (
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle>3. The device</CardTitle>
+                <CardDescription>
+                  {mode === 'new'
+                    ? 'Add it to the fleet first. It shows as offline until it boots; then install the OS on it.'
+                    : mode === 'existing'
+                      ? 'Pick a device that is already in the fleet. It gets a new key, written into what you install.'
+                      : 'No device is added now. Devices using the image register themselves when they first boot.'}
+                </CardDescription>
               </div>
-            )}
-            {busy && !progress && (
-              <p className='flex items-center gap-2 text-xs text-muted-foreground'>
-                <Loader2 className='size-3.5 animate-spin' aria-hidden />
-                {busy === 'base' ? 'Preparing the download…' : busy === 'config' ? 'Generating the configuration…' : 'Working…'}
-              </p>
-            )}
+            </CardHeader>
+            <CardContent className='grid gap-3'>
+              <Choice
+                label='Which device'
+                value={mode}
+                onChange={(next) => {
+                  setMode(next);
+                  setConfigDone(null);
+                }}
+                options={[
+                  { value: 'new', title: 'New device', hint: 'Add one to the fleet now.' },
+                  { value: 'existing', title: 'Registered', hint: 'Use a device already in the fleet.' },
+                  { value: 'fleet', title: 'Many devices', hint: 'One fleet-wide image, nothing added now.' },
+                ]}
+              />
 
-            {outcome && (
-              <div className='grid gap-3'>
-                <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
-                  <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
-                  <span>
-                    {outcome.kind === 'config' ? (
+              {mode === 'new' &&
+                (added ? (
+                  <div className='grid gap-2 border border-success/40 px-3.5 py-3'>
+                    <p className='flex items-start gap-2 text-sm'>
+                      <CheckCircle2 className='mt-0.5 size-4 shrink-0 text-success' aria-hidden />
+                      <span>
+                        Added <strong>{added.name ?? added.uuid.slice(0, 7)}</strong> to {fleetName} <code className='text-xs text-muted-foreground'>{added.uuid.slice(0, 7)}</code>
+                      </span>
+                    </p>
+                    <DeviceWatch fleetId={Number(fleetId)} fleetName={fleetName} expectedUuid={added.uuid} since={0} made='image' statusOnly />
+                    <span className='flex flex-wrap gap-2'>
+                      <Button variant='ghost' size='sm' onClick={() => setAdded(null)}>
+                        Add another device
+                      </Button>
+                      <Button variant='ghost' size='sm' onClick={() => void removeAdded()}>
+                        <Trash2 aria-hidden />
+                        Remove this device
+                      </Button>
+                    </span>
+                  </div>
+                ) : (
+                  <div className='grid gap-2'>
+                    <Label htmlFor='vx-ad-name'>Device name (optional)</Label>
+                    <Input
+                      id='vx-ad-name'
+                      name='new-device-label'
+                      autoComplete='off'
+                      data-lpignore='true'
+                      data-1p-ignore='true'
+                      placeholder='for example Workshop Pi'
+                      maxLength={64}
+                      value={deviceName}
+                      onChange={(event) => setDeviceName(event.target.value)}
+                    />
+                    <span>
+                      <Button variant='accent' size='sm' disabled={!canAdd} onClick={() => void addDeviceToFleet()}>
+                        {adding ? <Loader2 className='animate-spin' aria-hidden /> : <CheckCircle2 aria-hidden />}
+                        Add device to {fleetName || 'the fleet'}
+                      </Button>
+                    </span>
+                    {!fleet && <p className='text-xs text-muted-foreground'>Choose a fleet and an OS version first.</p>}
+                  </div>
+                ))}
+
+              {mode === 'existing' && (
+                <div className='grid gap-2'>
+                  <Label htmlFor='vx-ad-device'>Device</Label>
+                  <Select id='vx-ad-device' value={existingUuid} onChange={(event) => setExistingUuid(event.target.value)} disabled={!fleetId}>
+                    <option value=''>{fleetId ? ((fleetDevices ?? []).length ? 'Choose a device…' : 'No devices in this fleet yet') : 'Choose a fleet first'}</option>
+                    {(fleetDevices ?? []).map((device) => (
+                      <option key={String(device.id)} value={String(device.uuid)}>
+                        {String(device['device name'] ?? device.uuid)} · {String(device.uuid).slice(0, 7)}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className='text-xs text-muted-foreground'>A new key is created for that device and written into what you install. Its old key keeps working until it is reflashed.</p>
+                </div>
+              )}
+
+              {mode === 'fleet' && (
+                <p className='text-xs text-muted-foreground'>
+                  The image works for any number of devices. No device is added now: each one registers itself in the fleet the first time it boots, so it appears here only then. Anyone who has the image can add a
+                  device to your fleet, so keep it private.
+                </p>
+              )}
+          <div className='mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3'>
+            <span>
+              {3 > 1 && (
+                <Button variant='ghost' size='sm' onClick={() => goTo(2)}>
+                  Back
+                </Button>
+              )}
+            </span>
+            <span className='flex items-center gap-3'>
+              {!(step3Valid) && <span className='text-xs text-muted-foreground'>{mode === 'new' ? 'Add the device first.' : 'Choose the device.'}</span>}
+              <Button variant='accent' size='sm' disabled={!(step3Valid)} onClick={() => goTo(4)}>
+                Continue
+              </Button>
+            </span>
+          </div>
+            </CardContent>
+          </Card>
+
+          )}
+          {step === 4 && (
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle>4. Install the OS</CardTitle>
+                <CardDescription>The config contains a fleet key. Keep it private and do not share it.</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className='grid gap-3'>
+              {!targetReady && (
+                <p className='border border-input px-3 py-2 text-xs text-muted-foreground'>
+                  {mode === 'new' ? 'Add the device first (step 3). The image is then made for that device.' : 'Choose the device first (step 3).'}
+                </p>
+              )}
+              {elsewhere && (
+                <p className='border border-input px-3 py-2 text-xs'>
+                  A download is running: <strong>{elsewhere.title}</strong> ({elsewhere.label}
+                  {elsewhere.progress?.percent !== undefined ? `, ${Math.floor(elsewhere.progress.percent)}%` : ''}). One at a time; you can still get <code>config.json</code> below.
+                </p>
+              )}
+
+              {folderPicker ? (
+                <>
+                  <Step n={1} title='Choose where images are kept' state={folder ? 'done' : 'todo'}>
+                    <p className='text-xs text-muted-foreground'>A folder on this computer. balenaOS is downloaded into it once and reused for every device, so it is not downloaded again.</p>
+                    <span className='flex items-center gap-2 text-sm'>
+                      <FolderOpen className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+                      <span className='min-w-0 truncate' title={folder?.name}>
+                        {folder ? folder.name : 'No folder chosen yet'}
+                      </span>
+                    </span>
+                    {folder && folderAccess === 'prompt' && <span className='text-xs text-muted-foreground'>The browser will ask you to allow access to this folder again when you continue.</span>}
+                    {folder && folderAccess === 'denied' && <span className='text-xs text-destructive'>The browser has blocked this folder. Choose it again to allow access.</span>}
+                    <span className='flex flex-wrap gap-2'>
+                      <Button variant={folder ? 'outline' : 'accent'} size='sm' disabled={diskBusy} onClick={() => void pickFolder()}>
+                        {folder ? 'Change folder' : 'Choose a folder'}
+                      </Button>
+                      {folder && (
+                        <Button variant='ghost' size='sm' disabled={diskBusy} onClick={clearFolder}>
+                          Forget folder
+                        </Button>
+                      )}
+                    </span>
+                  </Step>
+
+                  <Step n={2} title={`Base image${version ? `: balenaOS ${version}` : ''}`} state={baseReady ? 'done' : folder && version ? 'todo' : 'blocked'}>
+                    {baseTransfer?.state === 'running' ? (
+                      <TransferProgress transfer={baseTransfer} onCancel={() => transfers.cancel(baseTransfer.id)} />
+                    ) : baseTransfer?.state === 'error' ? (
+                      <TransferFailure
+                        transfer={baseTransfer}
+                        disabled={diskBusy}
+                        onChooseFolder={() => void pickFolder()}
+                        onRetry={startBase}
+                        onRedownload={startBase}
+                      />
+                    ) : !folder || !version ? (
+                      <p className='text-xs text-muted-foreground'>{!folder ? 'Choose a folder first.' : 'Choose a fleet and a version first.'}</p>
+                    ) : baseState === 'checking' ? (
+                      <p className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <Loader2 className='size-3.5 animate-spin' aria-hidden />
+                        Looking in your folder…
+                      </p>
+                    ) : base && typeof base === 'object' && base.state === 'present' ? (
                       <>
-                        <code>config.json</code> downloaded.
-                      </>
-                    ) : outcome.kind === 'stream' ? (
-                      <>
-                        <code>{outcome.fileName}</code> is downloading to {outcome.where}.
+                        <p className='text-xs text-success'>
+                          On this computer: <code>{base.name}</code> ({formatBytes(base.file.size)}). It is reused, so nothing is downloaded again.
+                        </p>
+                        <span>
+                          <Button variant='ghost' size='sm' disabled={diskBusy} onClick={startBase}>
+                            Download it again
+                          </Button>
+                        </span>
                       </>
                     ) : (
                       <>
-                        Saved <code>{outcome.fileName}</code>
-                        {outcome.bytes ? ` (${formatBytes(outcome.bytes)})` : ''} in {outcome.where}.
+                        <p className='text-xs text-muted-foreground'>
+                          {baseState === 'incomplete'
+                            ? 'A file with this name is in the folder but it is not complete. Download it again.'
+                            : "Not on this computer yet. balenaOS images are large (roughly 1 to 8 GB depending on the device), so the first download can take several minutes. It is saved once, checked against balena's checksum and reused for every device."}
+                        </p>
+                        <span>
+                          <Button variant='accent' size='sm' disabled={diskBusy || !deviceType || !version} onClick={startBase}>
+                            <HardDriveDownload aria-hidden />
+                            Download base image
+                          </Button>
+                        </span>
                       </>
                     )}
-                    {outcome.deviceUuid && (
-                      <span className='block'>
-                        Device <code>{outcome.deviceUuid.slice(0, 7)}</code> is registered. It shows as offline until it boots with this config.
-                      </span>
-                    )}
-                    {outcome.verification?.ok && <span className='block text-muted-foreground'>Checked: the file was read back and is complete.</span>}
-                    {outcome.verification && !outcome.verification.ok && (
-                      <span className='block text-destructive'>{outcome.verification.problem} Do not use this file; create it again.</span>
-                    )}
-                    {outcome.kind === 'base' && <span className='block text-muted-foreground'>Next: create the flash-ready image (step 3).</span>}
-                  </span>
-                </p>
-                {(outcome.kind === 'image' || outcome.kind === 'config' || outcome.kind === 'stream') && fleet && (
-                  <DeviceWatch
-                    fleetId={Number(fleetId)}
-                    fleetName={fleetName}
-                    expectedUuid={outcome.deviceUuid}
-                    since={outcome.at}
-                    made={outcome.kind === 'config' ? 'config' : 'image'}
-                  />
-                )}
-              </div>
-            )}
+                  </Step>
 
-            {folderPicker && folder && library.length > 0 && (
-              <details className='border border-input px-3.5 py-2.5'>
-                <summary className='cursor-pointer text-xs text-muted-foreground'>Base images on this computer ({library.length})</summary>
-                <ul className='mt-2 grid gap-1.5'>
-                  {library.map((item) => (
-                    <li key={item.name} className='flex items-center justify-between gap-2 text-xs'>
-                      <span className='min-w-0 truncate' title={item.name}>
-                        {item.meta.deviceType} · {item.meta.version} · {formatBytes(item.meta.size)}
-                      </span>
-                      <Button variant='ghost' size='sm' disabled={working} aria-label={`Delete ${item.name}`} onClick={() => void removeFromLibrary(item.name)}>
-                        <Trash2 aria-hidden />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </CardContent>
-        </Card>
+                  <Step n={3} title='Create the flash-ready image' state={imageDone ? 'done' : baseReady && ready ? 'todo' : 'blocked'}>
+                    {imageTransfer?.state === 'running' ? (
+                      <TransferProgress transfer={imageTransfer} onCancel={() => transfers.cancel(imageTransfer.id)} />
+                    ) : imageTransfer?.state === 'error' ? (
+                      <TransferFailure
+                        transfer={imageTransfer}
+                        disabled={diskBusy}
+                        onChooseFolder={() => void pickFolder()}
+                        onRetry={startImage}
+                        onRedownload={startBase}
+                      />
+                    ) : (
+                      <>
+                        <p className='text-xs text-muted-foreground'>Copies the base image and writes the configuration for {mode === 'fleet' ? 'this fleet' : 'this device'} into the copy, here on your computer.</p>
+                        <span>
+                          <Button variant='accent' size='sm' disabled={diskBusy || !baseReady || !ready} onClick={startImage}>
+                            <Wand2 aria-hidden />
+                            Create image
+                          </Button>
+                        </span>
+                        {baseReady && !choicesReady && <span className='text-xs text-muted-foreground'>Finish steps 1 and 2 first.</span>}
+                      </>
+                    )}
+                  </Step>
+                </>
+              ) : (
+                <Step n={1} title='Download the flash-ready image' state={streamDone ? 'done' : ready ? 'todo' : 'blocked'}>
+                  <p className='text-xs text-muted-foreground'>
+                    This browser cannot keep a library of images in a folder, so the finished image is streamed to your downloads folder in one go. Use Chrome or Edge to keep a base image and reuse it.
+                  </p>
+                  <span>
+                    <Button variant='accent' size='sm' disabled={streamBusy || !ready} onClick={() => void downloadStreamed()}>
+                      {streamBusy ? <Loader2 className='animate-spin' aria-hidden /> : <HardDriveDownload aria-hidden />}
+                      Download flash-ready image
+                    </Button>
+                  </span>
+                </Step>
+              )}
+
+              <div className='grid gap-2 border-t border-border pt-3'>
+                <span className={microLabel}>Already flashed a drive?</span>
+                <Button variant='outline' disabled={configBusy || !ready} onClick={() => void downloadConfig()}>
+                  {configBusy ? <Loader2 className='animate-spin' aria-hidden /> : <FileJson aria-hidden />}
+                  Download config.json only
+                </Button>
+                <p className='text-xs text-muted-foreground'>
+                  Replaces <code>config.json</code> on the boot partition of a drive that already runs balenaOS. Available while a download runs.
+                </p>
+              </div>
+
+              {notice && <p className='border border-input px-3 py-2 text-xs'>{notice}</p>}
+
+              {imageDone?.outcome && (
+                <div className='grid gap-3'>
+                  <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
+                    <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
+                    <span>
+                      Saved <code>{imageDone.outcome.fileName}</code> ({formatBytes(imageDone.outcome.bytes)}) in {imageDone.outcome.where}.
+                      {imageDone.outcome.verification?.ok && <span className='block text-muted-foreground'>Checked: the file was read back and is complete.</span>}
+                      {imageDone.outcome.verification && !imageDone.outcome.verification.ok && (
+                        <span className='block text-destructive'>{imageDone.outcome.verification.problem} Do not use this file; create it again.</span>
+                      )}
+                    </span>
+                  </p>
+                  <DeviceWatch fleetId={Number(fleetId)} fleetName={fleetName} expectedUuid={targetUuid || undefined} since={imageDone.finishedAt ?? imageDone.startedAt} made='image' />
+                </div>
+              )}
+              {configDone && (
+                <div className='grid gap-3'>
+                  <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
+                    <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
+                    <span>
+                      <code>config.json</code> downloaded.
+                    </span>
+                  </p>
+                  <DeviceWatch fleetId={Number(fleetId)} fleetName={fleetName} expectedUuid={targetUuid || undefined} since={configDone.at} made='config' />
+                </div>
+              )}
+              {streamDone && (
+                <div className='grid gap-3'>
+                  <p className='flex items-start gap-2 border border-success/40 px-3 py-2 text-xs'>
+                    <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
+                    <span>
+                      <code>{streamDone.fileName}</code> is downloading to your browser&apos;s downloads folder.
+                    </span>
+                  </p>
+                  <DeviceWatch fleetId={Number(fleetId)} fleetName={fleetName} expectedUuid={targetUuid || undefined} since={streamDone.at} made='image' />
+                </div>
+              )}
+
+              {folderPicker && folder && library.length > 0 && (
+                <details className='border border-input px-3.5 py-2.5'>
+                  <summary className='cursor-pointer text-xs text-muted-foreground'>Base images on this computer ({library.length})</summary>
+                  <ul className='mt-2 grid gap-1.5'>
+                    {library.map((item) => (
+                      <li key={item.name} className='flex items-center justify-between gap-2 text-xs'>
+                        <span className='min-w-0 truncate' title={item.name}>
+                          {item.meta.deviceType} · {item.meta.version} · {formatBytes(item.meta.size)}
+                        </span>
+                        <Button variant='ghost' size='sm' disabled={diskBusy} aria-label={`Delete ${item.name}`} onClick={() => void removeFromLibrary(item.name)}>
+                          <Trash2 aria-hidden />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+          <div className='mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3'>
+            <span>
+              {4 > 1 && (
+                <Button variant='ghost' size='sm' onClick={() => goTo(3)}>
+                  Back
+                </Button>
+              )}
+            </span>
+            <span className='flex items-center gap-3'>
+              {!(true) && <span className='text-xs text-muted-foreground'>{''}</span>}
+              
+            </span>
+          </div>
+            </CardContent>
+          </Card>
+
+          )}
+        </div>
       </div>
     </VxScope>
   );
