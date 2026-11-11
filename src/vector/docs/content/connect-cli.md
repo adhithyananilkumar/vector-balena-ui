@@ -7,15 +7,28 @@ Four steps, about five minutes. You only do this once per computer. Pick your sy
 
 ## Windows
 
-### 1. Install the balena CLI (skip if `balena version` already works)
+### 1. Install the balena CLI
 
-1. Open <https://github.com/balena-io/balena-cli/releases/latest>.
-2. Under **Assets**, download the file ending in `-windows-x64-installer.exe`.
-3. Run it and click **Next** until it finishes.
+Do this first: until it is installed, `balena` gives "not recognized". Open PowerShell (press the **Windows key**, type `PowerShell`, press **Enter**) and paste this whole block, then press Enter. It downloads the official installer and starts it. Click **Next** until it finishes.
+
+```powershell
+$r = Invoke-RestMethod https://api.github.com/repos/balena-io/balena-cli/releases/latest
+$a = $r.assets | Where-Object { $_.name -like "*windows-x64-installer.exe" }
+Invoke-WebRequest $a.browser_download_url -OutFile "$env:TEMPalena-cli-installer.exe"
+Start-Process "$env:TEMPalena-cli-installer.exe"
+```
+
+Then **close PowerShell and open a new window**, and check it worked:
+
+```powershell
+balena version
+```
+
+You should see a version number such as `25.2.11`. (Prefer to click? Download the file ending in `-windows-x64-installer.exe` from <https://github.com/balena-io/balena-cli/releases/latest>.)
 
 ### 2. Open PowerShell
 
-Press the **Windows key**, type `PowerShell`, and press **Enter**. A blue or black window opens. This is where you paste commands: **right-click** inside it to paste, then press **Enter**.
+Press the **Windows key**, type `PowerShell`, and press **Enter**. A blue or black window opens (a new one, if you just installed). This is where you paste commands: **right-click** inside it to paste, then press **Enter**.
 
 ### 3. Point the CLI at your server
 
