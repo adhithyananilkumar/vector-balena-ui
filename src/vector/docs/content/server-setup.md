@@ -22,9 +22,10 @@ ocsp.mydomain.com
 registry2.mydomain.com
 s3.mydomain.com
 tunnel.mydomain.com
+vector.mydomain.com
 ```
 
-Vector adds a few more for itself, for example `admin.mydomain.com` for the UI and `postgrest.mydomain.com` for the internal PostgREST (see [Certificates and DNS](doc:certificates-dns)).
+`vector.mydomain.com` is the HTTPS address of the Vector server, which the UI calls. The UI itself (for example `admin.mydomain.com`) is a static site on another host, so its record points there (see [Certificates and DNS](doc:certificates-dns)). If the domain is on Cloudflare, create the records as **DNS only** (grey cloud).
 
 > [!WARNING]
 > Use a real domain. Names ending in `.local` do not work for devices, because `.local` is reserved for multicast DNS and a `hosts` file edit only helps the computer you made it on.
@@ -46,14 +47,29 @@ sudo su balena
 
 ## 4. Get openBalena and start it
 
+Vector's backend is the `vector-balena` repository (openBalena plus the Vector server). Its composition builds `../open-balena-postgrest`, so clone both side by side:
+
 ```bash
-git clone https://github.com/balena-io/open-balena.git ~/open-balena
-cd ~/open-balena
+git clone https://github.com/adhithyananilkumar/vector-balena.git ~/vector-balena
+git clone https://github.com/ob-community/open-balena-postgrest.git ~/open-balena-postgrest
+cd ~/vector-balena
 export DNS_TLD=mydomain.com
+export VECTOR_ALLOWED_ORIGINS=https://admin.mydomain.com   # where the UI is hosted
+export VECTOR_PUBLIC_URL=https://vector.${DNS_TLD}
 make up
 ```
 
-At the end the command prints `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD`. **Write them down**. They are your first admin login, and you need them for `balena login`.
+At the end the command prints `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD`. **Write them down**. They are your first admin login, and you need them for `balena login`. To read the password again later: `docker compose exec api cat config/env | grep SUPERUSER_PASSWORD`.
+
+> [!NOTE]
+> **ARM servers (aarch64, for example Oracle Ampere):** the `sut` and `dut` test services cannot be built on ARM, so `make up` fails. Start only the real services:
+>
+> ```bash
+> docker compose up --build -d balena-ca cert-manager db docker redis s3 api postgrest tag-sidecar \
+>   haproxy registry delta vector-server haproxy-sidecar vpn
+> ```
+>
+> The first start takes several minutes. `haproxy` restarts until the certificate has been created; that is normal.
 
 If your Vector fork keeps its own copy of the composition, run the same commands in that folder.
 
@@ -77,19 +93,27 @@ make verify
 | Update | `make update` |
 | List the services | `docker compose ps` |
 
-The services are: `api`, `registry`, `vpn`, `db`, `s3`, `redis`, `haproxy`, `haproxy-sidecar`, `cert-manager`, `balena-ca`, `tag-sidecar` and `postgrest`.
+The services are: `api`, `registry`, `vpn`, `db`, `s3`, `redis`, `haproxy`, `haproxy-sidecar`, `cert-manager`, `balena-ca`, `tag-sidecar`, `postgrest`, `delta` and `vector-server`.
 
-## 7. Start the Vector server and host the UI
+## 7. Check the Vector server and host the UI
 
-The Vector server starts with the rest of the stack:
+The Vector server starts with the rest of the stack. Check it through its public HTTPS address (haproxy routes `vector.mydomain.com` to it):
 
 ```bash
-docker compose up -d vector-server
+curl https://vector.mydomain.com/healthz   # {"ok":true}
 ```
 
-Set `VECTOR_ALLOWED_ORIGINS` to the address where the UI will live. See [Configuration reference](doc:configuration).
+`VECTOR_ALLOWED_ORIGINS` must be the address where the UI is hosted. See [Configuration reference](doc:configuration).
 
-The Vector UI is a static website. Build it with the settings from the same page and put it on any static host, for example Vercel:
+The Vector UI is a static website. On Vercel, import the `vector-balena-ui` repository and add these environment variables (they are read when the site is built, so **redeploy** after adding or changing them):
+
+| Name | Value |
+|---|---|
+| `REACT_APP_OPEN_BALENA_API_URL` | `https://api.mydomain.com` |
+| `REACT_APP_OPEN_BALENA_API_VERSION` | `v52.2.3` |
+| `REACT_APP_VECTOR_SERVER_URL` | `https://vector.mydomain.com` |
+
+On another static host, build it with the same settings and upload the output:
 
 ```bash
 npm ci

@@ -5,8 +5,10 @@ The build output is plain static files in `dist/client`. Any static host works; 
 Before deploying, have these ready:
 
 1. A reachable **openBalena API** that allows your UI's origin (CORS).
-2. A running **Vector server** with HTTPS, and your UI's origin in its `VECTOR_ALLOWED_ORIGINS`. See the
-   [backend guide](https://github.com/adhithyananilkumar/vector-balena/blob/master/docs/vector-server.md).
+2. A running **Vector server** with HTTPS, and your UI's origin in its `VECTOR_ALLOWED_ORIGINS`. The backend stack
+   serves it at `https://vector.<your domain>` with the same trusted certificate as the API, so nothing extra needs
+   to be installed. See the
+   [backend guide](https://github.com/adhithyananilkumar/vector-balena/blob/master/docs/vector-server.md#public-https-address).
 
 ## Vercel
 
@@ -22,6 +24,10 @@ Before deploying, have these ready:
    | `REACT_APP_OPEN_BALENA_API_URL` | `https://api.example.com` |
    | `REACT_APP_OPEN_BALENA_API_VERSION` | `v52.2.3` |
    | `REACT_APP_VECTOR_SERVER_URL` | `https://vector.example.com` |
+
+   These are not secrets (they end up in the browser bundle), so use plain variables rather than sensitive ones.
+   The values are read **at build time**: after adding or changing them, redeploy (Deployments > the latest
+   production deployment > Redeploy). Vercel may ask you to verify your identity by email before it redeploys.
 
 3. Deploy. Then take the deployment's origin (for example `https://vector-ui.vercel.app`) and add it to the server's
    `VECTOR_ALLOWED_ORIGINS`, and to the API's CORS settings. Preview deployments get their own origin; add them while

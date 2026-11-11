@@ -16,7 +16,10 @@ Everything must resolve from three places: your **computer**, the **server itsel
 | `tunnel.mydomain.com` | Remote access |
 | `ca.mydomain.com` | Certificate authority files |
 | `ocsp.mydomain.com` | Certificate status |
-| `admin.mydomain.com` | The Vector UI (your choice of name) |
+| `vector.mydomain.com` | The Vector server (API behind this UI). Served by the stack's haproxy with the same certificate. |
+| `admin.mydomain.com` | The Vector UI (your choice of name). It is a static site hosted elsewhere, for example Vercel, so its record points at that host, not at the server. |
+
+If the domain is on Cloudflare, create the records for the server as **DNS only** (grey cloud). A single wildcard record (`*.mydomain.com`, or `*.fleet.mydomain.com` when the server uses a sub-domain as its domain) covers all of the names above.
 
 Check from any machine:
 
@@ -60,6 +63,13 @@ make verify
 ```
 
 For Gandi use `GANDI_API_TOKEN` instead. Only one of the two may be set.
+
+On Cloudflare, create the token under My Profile > API Tokens with the "Edit zone DNS" template, limit it to your zone and add **Zone: Read**. The server asks for one wildcard certificate (`*.mydomain.com`), so if the domain has `CAA` records they must allow `letsencrypt.org` for `issuewild`. The first issue takes a few minutes: the server waits for DNS to propagate and then generates DH parameters, and `haproxy` keeps restarting until the certificate files exist.
+
+> [!NOTE]
+> The certificate manager's logs include the new private key. Do not paste them into tickets or chats.
+
+The Vector server at `vector.mydomain.com` uses the same wildcard certificate, which is what lets a UI on Vercel (HTTPS) call it.
 
 With a trusted certificate you can drop the CA from your computers, from Docker, and from device configs.
 

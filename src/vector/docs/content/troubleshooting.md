@@ -52,6 +52,22 @@ setx NODE_EXTRA_CA_CERTS "C:\path\to\ca.pem"
 
 Make sure the path exists and that the file is the `.pem` from `.balena/ca-mydomain.com.pem` on the server.
 
+### The UI on Vercel shows a setup screen or `Failed to fetch`
+
+The UI reads its settings when it is built. Check, in this order:
+
+1. The three `REACT_APP_*` variables exist on the Vercel project (Production) and the site was **redeployed** after adding them.
+2. `curl https://api.mydomain.com/ping` and `curl https://vector.mydomain.com/healthz` work from your computer, with no certificate warning. A page served over HTTPS cannot call a server with an untrusted certificate; use a Let's Encrypt certificate (see [Certificates and DNS](doc:certificates-dns)).
+3. `VECTOR_ALLOWED_ORIGINS` on the server contains the UI's exact origin (for example `https://admin.mydomain.com`, no trailing slash). Restart the server after changing it.
+4. The API answers browsers: `curl` is exempt from the API's CORS headers, so test with `curl -A Mozilla/5.0 -H "Origin: https://admin.mydomain.com" -X OPTIONS https://api.mydomain.com/v7/application -i` and look for `access-control-allow-origin`.
+
+### After signing in: `502` on `/admin-db/actions/access-context`, or "Unable to resolve administrator access from role"
+
+Two first-start causes, both on the server:
+
+1. **PostgREST started before the API had created the database tables.** `docker compose logs postgrest` then says `Schema cache loaded 0 Relations`. Restart it once the API is healthy: `docker compose restart postgrest` (the log should now show about 54 relations).
+2. **No administrator exists yet.** Find your user's numeric ID (`docker compose exec db psql -U docker -d resin -Atc 'select id, email from "user"'`), set `OPEN_BALENA_BOOTSTRAP_USER_ID=<id>` in the stack's `.env` and run `docker compose up -d vector-server`. Startup creates the `global-admin` role and assigns it. See [Access control](doc:access-control).
+
 ### `getaddrinfo ENOTFOUND api.mydomain.com`
 
 Your computer cannot resolve the name.
