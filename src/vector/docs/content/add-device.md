@@ -65,6 +65,8 @@ The download can take many minutes. It **keeps going when you leave the page**:
 
 **Download config.json only** gives just the configuration file, for a drive that already runs balenaOS. It works at any time, including while a base image is downloading.
 
+With **Wi-Fi** selected you also get a second file, `resin-wifi-01`. balenaOS joins Wi-Fi from that file, not from config.json, so copy it into the `system-connections` folder of the boot partition next to config.json. A full image already contains it.
+
 ### Checks and recovery
 
 - The folder is tested with a tiny file before anything starts, so a moved, read-only or locked folder is reported at once.

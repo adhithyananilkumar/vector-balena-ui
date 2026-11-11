@@ -12,6 +12,7 @@ import { Input } from '../components/input';
 import { Label } from '../components/label';
 import { VxScope } from '../components/scope';
 import { Select } from '../components/select';
+import { wifiConnectionFile } from '../lib/wifi';
 import { authFetch, formatBytes } from '../lib/api';
 import { cn } from '../lib/utils';
 import { serverUrl } from '../../lib/serverUrl';
@@ -81,8 +82,8 @@ const Choice = <T extends string>({
   </div>
 );
 
-const saveJson = (data: unknown, fileName: string) => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+const saveText = (text: string, fileName: string, type = 'text/plain') => {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
@@ -91,6 +92,7 @@ const saveJson = (data: unknown, fileName: string) => {
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+const saveJson = (data: unknown, fileName: string) => saveText(JSON.stringify(data, null, 2), fileName, 'application/json');
 
 interface WizardStep {
   n: number;
@@ -226,6 +228,9 @@ const AddDevice: React.FC = () => {
   const { data: deviceTypes } = useGetList('device type', { pagination: { page: 1, perPage: 1000 }, sort: { field: 'slug', order: 'ASC' } });
 
   const [searchParams] = useSearchParams();
+  // a link to another fleet starts from scratch instead of inheriting the last fleet's answers and device
+  const linkedFleet = searchParams.get('fleet');
+  if (linkedFleet && linkedFleet !== draft.fleetId) draft = {};
   const [fleetId, setFleetId] = useState(() => searchParams.get('fleet') ?? draft.fleetId ?? '');
   const [versions, setVersions] = useState<string[]>([]);
   const [version, setVersion] = useState(draft.version ?? '');
@@ -246,7 +251,7 @@ const AddDevice: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [configBusy, setConfigBusy] = useState(false);
-  const [configDone, setConfigDone] = useState<{ at: number; uuid?: string } | null>(null);
+  const [configDone, setConfigDone] = useState<{ at: number; uuid?: string; wifi?: boolean } | null>(null);
   const [streamBusy, setStreamBusy] = useState(false);
   const [streamDone, setStreamDone] = useState<{ at: number; fileName: string } | null>(null);
 
@@ -467,9 +472,12 @@ const AddDevice: React.FC = () => {
     setError(null);
     setConfigBusy(true); // independent of any large download that is running
     try {
-      const config = await authFetch<{ uuid?: string }>('/image-maker/config', { method: 'POST', body: JSON.stringify(payload()) });
+      const config = await authFetch<{ uuid?: string; wifiSsid?: string; wifiKey?: string }>('/image-maker/config', { method: 'POST', body: JSON.stringify(payload()) });
       saveJson(config, 'config.json');
-      setConfigDone({ at: Date.now(), uuid: mode !== 'fleet' ? config.uuid : undefined });
+      // balenaOS joins Wi-Fi from this file, not from config.json
+      const wifi = wifiConnectionFile(config as Record<string, unknown>);
+      if (wifi) window.setTimeout(() => saveText(wifi, 'resin-wifi-01'), 400);
+      setConfigDone({ at: Date.now(), uuid: mode !== 'fleet' ? config.uuid : undefined, wifi: Boolean(wifi) });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to generate the config.');
     } finally {
@@ -1030,6 +1038,11 @@ const AddDevice: React.FC = () => {
                     <CheckCircle2 className='mt-0.5 size-3.5 shrink-0 text-success' aria-hidden />
                     <span>
                       <code>config.json</code> downloaded.
+                      {configDone.wifi && (
+                        <span className='block text-muted-foreground'>
+                          A second file, <code>resin-wifi-01</code>, was downloaded too. Copy it into the <code>system-connections</code> folder on the boot partition, next to <code>config.json</code>, or the device will not join the Wi-Fi network.
+                        </span>
+                      )}
                     </span>
                   </p>
                   <DeviceWatch fleetId={Number(fleetId)} fleetName={fleetName} expectedUuid={targetUuid || undefined} since={configDone.at} made='config' />
