@@ -8,6 +8,8 @@ import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Search, X } from 'lucide-
 import { VxScope } from '../components/scope';
 import { docSections, docs, findDoc, searchDocs, type DocPage } from '../docs/registry';
 import { Markdown } from '../docs/markdown';
+import { personalizeDoc } from '../docs/personalize';
+import environment from '../../lib/reactAppEnv';
 import { cn } from '../lib/utils';
 
 const microLabel = 'font-mono text-[10.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase';
@@ -168,6 +170,10 @@ const Article: React.FC<{ doc: DocPage }> = ({ doc }) => {
   const [activeId, setActiveId] = useState<string | undefined>();
   const articleRef = useRef<HTMLElement>(null);
 
+  const personalizedSource = useMemo(
+    () => personalizeDoc(doc.source, environment.REACT_APP_OPEN_BALENA_API_URL, window.location.origin),
+    [doc.source],
+  );
   const index = docs.findIndex((candidate) => candidate.slug === doc.slug);
   const previous = docs[index - 1];
   const next = docs[index + 1];
@@ -236,7 +242,7 @@ const Article: React.FC<{ doc: DocPage }> = ({ doc }) => {
           {' / '}
           {doc.section}
         </p>
-        <Markdown source={doc.source} />
+        <Markdown source={personalizedSource} />
 
         <div className='mt-12 grid gap-3 border-t border-border pt-6 sm:grid-cols-2'>
           {previous ? (

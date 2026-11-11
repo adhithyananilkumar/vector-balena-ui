@@ -4,7 +4,7 @@ A fresh balena CLI talks to balenaCloud. Three things make it talk to your Vecto
 
 ## 1. Set the server URL
 
-Replace `mydomain.com` with the domain of your Vector server. It is the same domain that `api.mydomain.com` belongs to.
+This page fills in your server's domain automatically (taken from the API address this UI is configured with). If you still see `mydomain.com`, replace it with the domain of your Vector server, the same domain that `api.mydomain.com` belongs to.
 
 **For the current terminal only:**
 
@@ -39,10 +39,10 @@ Open a new terminal afterwards. `setx` does not change the window you ran it in.
 
 A default Vector install uses a **self-signed** certificate. Your computer does not trust it until you tell it to. Skip this step only if your server uses a publicly trusted certificate (see [Certificates and DNS](doc:certificates-dns)).
 
-First get the CA file. On the server it is at `.balena/ca-mydomain.com.pem` in the openBalena folder. Copy it to your computer, for example with `scp`:
+First get the CA file. On the server it is at `.balena/ca-mydomain.com.pem` in the `vector-balena` folder (the folder you cloned it into). Copy it to your computer, for example with `scp`:
 
 ```bash
-scp balena@mydomain.com:~/open-balena/.balena/ca-mydomain.com.pem ./ca.pem
+scp balena@mydomain.com:~/vector-balena/.balena/ca-mydomain.com.pem ./ca.pem
 ```
 
 The CLI itself needs `NODE_EXTRA_CA_CERTS`:
