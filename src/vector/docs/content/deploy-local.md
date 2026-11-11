@@ -149,6 +149,6 @@ balena deploy "${1:-MyFleet}" --build
 
 The most common failures are listed in [Troubleshooting](doc:troubleshooting#deploy-and-build-problems). In short:
 
-- `x509: certificate signed by unknown authority` means Docker does not trust your CA. See [Docker must trust it too](doc:connect-cli#docker-must-trust-it-too).
+- `x509: certificate signed by unknown authority` means Docker does not trust your CA. See [Docker must trust it too](doc:connect-cli#self-signed-certificates).
 - `exec format error` on the device means you built for the wrong CPU. See [Multi-architecture builds](doc:multi-arch).
 - `Not logged in` means run `balena login` again.

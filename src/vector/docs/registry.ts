@@ -46,7 +46,7 @@ const definitions: DocDefinition[] = [
   { slug: 'ui-tour', section: 'Start here', description: 'The sidebar, top bar, lists and shortcuts.', source: uiTour },
 
   { slug: 'install-cli', section: 'Deploy', description: 'Install Docker and the balena CLI on Windows, macOS or Linux.', source: installCli },
-  { slug: 'connect-cli', section: 'Deploy', description: 'Point the CLI at your server, trust the certificate and log in.', source: connectCli },
+  { slug: 'connect-cli', section: 'Deploy', description: 'Install the CLI, point it at your server and log in: copy-paste steps for Windows, macOS and Linux.', source: connectCli },
   { slug: 'deploy-local', section: 'Deploy', description: 'Build on your computer, push to Vector, distribute to devices.', source: deployLocal },
   { slug: 'multi-arch', section: 'Deploy', description: 'Build for ARM devices from an Intel PC, and the reverse.', source: multiArch },
   { slug: 'releases-rollouts', section: 'Deploy', description: 'Draft releases, pinning, rollback and staged rollouts.', source: releasesRollouts },

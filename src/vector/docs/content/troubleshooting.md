@@ -103,7 +103,7 @@ certutil -addstore -f "ROOT" C:\path\to\ca.pem
 Restart-Service docker
 ```
 
-On Docker Desktop, restart it from the tray icon. Other systems: [Docker must trust it too](doc:connect-cli#docker-must-trust-it-too).
+On Docker Desktop, restart it from the tray icon. Other systems: [Self-signed certificates](doc:connect-cli#self-signed-certificates).
 
 ### `Cannot connect to the Docker daemon` or `docker: command not found`
 

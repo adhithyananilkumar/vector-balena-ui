@@ -93,7 +93,7 @@ Needed only with a self-signed certificate. Do all three if you deploy from this
 2. **Docker:** add the CA to the system store and restart Docker.
 3. **Your browser:** import the CA, or you will see a warning on the UI.
 
-The exact commands are in [Connect the CLI to Vector](doc:connect-cli#2-trust-your-certificate-authority).
+The exact commands are in [Connect the CLI to Vector](doc:connect-cli#self-signed-certificates).
 
 ## Trust the CA on a device
 

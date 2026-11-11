@@ -1,120 +1,120 @@
 # Connect the CLI to Vector
 
-A fresh balena CLI talks to balenaCloud. Three things make it talk to your Vector server instead: the server URL, trust for your certificate authority, and a login.
+Four steps, about five minutes. You only do this once per computer. Pick your system, then copy and paste each command exactly as shown.
 
-## 1. Set the server URL
+> [!TIP]
+> **Your server address is `mydomain.com`.** This page fills it in for you, so you can paste every command as it is.
 
-This page fills in your server's domain automatically (taken from the API address this UI is configured with). If you still see `mydomain.com`, replace it with the domain of your Vector server, the same domain that `api.mydomain.com` belongs to.
+## Windows
 
-**For the current terminal only:**
+### 1. Install the balena CLI (skip if `balena version` already works)
 
-```bash
-export BALENARC_BALENA_URL=mydomain.com
-```
+1. Open <https://github.com/balena-io/balena-cli/releases/latest>.
+2. Under **Assets**, download the file ending in `-windows-x64-installer.exe`.
+3. Run it and click **Next** until it finishes.
 
-```powershell
-$env:BALENARC_BALENA_URL = "mydomain.com"
-```
+### 2. Open PowerShell
 
-**Permanently**, using the CLI's configuration file. Create it if it does not exist and add one line:
+Press the **Windows key**, type `PowerShell`, and press **Enter**. A blue or black window opens. This is where you paste commands: **right-click** inside it to paste, then press **Enter**.
 
-```yaml
-balenaUrl: 'mydomain.com'
-```
+### 3. Point the CLI at your server
 
-| System | File location |
-|---|---|
-| Linux, macOS | `~/.balenarc.yml` |
-| Windows | `%UserProfile%\_balenarc.yml` |
-
-On Windows you can also set the variable permanently for your user:
+Paste this and press Enter:
 
 ```powershell
 setx BALENARC_BALENA_URL "mydomain.com"
 ```
 
-Open a new terminal afterwards. `setx` does not change the window you ran it in.
+You should see `SUCCESS`. Now **close the PowerShell window and open a new one** (Windows key, `PowerShell`, Enter). The setting only applies to windows opened afterwards.
 
-## 2. Trust your certificate authority
+### 4. Log in and check
 
-A default Vector install uses a **self-signed** certificate. Your computer does not trust it until you tell it to. Skip this step only if your server uses a publicly trusted certificate (see [Certificates and DNS](doc:certificates-dns)).
-
-First get the CA file. On the server it is at `.balena/ca-mydomain.com.pem` in the `vector-balena` folder (the folder you cloned it into). Copy it to your computer, for example with `scp`:
-
-```bash
-scp balena@mydomain.com:~/vector-balena/.balena/ca-mydomain.com.pem ./ca.pem
-```
-
-The CLI itself needs `NODE_EXTRA_CA_CERTS`:
-
-```bash
-export NODE_EXTRA_CA_CERTS=/path/to/ca.pem
-```
+In the new window, paste:
 
 ```powershell
-$env:NODE_EXTRA_CA_CERTS = "C:\path\to\ca.pem"
-```
-
-```powershell
-setx NODE_EXTRA_CA_CERTS "C:\path\to\ca.pem"
-```
-
-### Docker must trust it too
-
-`balena deploy` pushes images through your local Docker, and Docker has its own list of trusted certificates. If you skip this you will see `x509: certificate signed by unknown authority` while pushing.
-
-**Windows (Docker Desktop):** add the CA to the Windows trusted root store, then restart Docker Desktop (right-click its tray icon, then **Restart**). Run this in an **administrator** PowerShell:
-
-```powershell
-certutil -addstore -f "ROOT" C:\path\to\ca.pem
-```
-
-**macOS:** add the CA to the system keychain, then restart Docker Desktop:
-
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ca.pem
-```
-
-**Linux:** install the CA system-wide and restart Docker:
-
-```bash
-sudo cp ca.pem /usr/local/share/ca-certificates/
-sudo update-ca-certificates
-sudo systemctl restart docker
-```
-
-If that is not enough, give Docker the CA for the registry hostname directly:
-
-```bash
-sudo mkdir -p /etc/docker/certs.d/registry2.mydomain.com
-sudo cp ca.pem /etc/docker/certs.d/registry2.mydomain.com/ca.crt
-sudo systemctl restart docker
-```
-
-## 3. Log in
-
-```bash
 balena login
 ```
 
-Choose **Credentials**, then enter your email and password. To check where you are logged in:
+Use the arrow keys to choose **Credentials** and press Enter, then type the email and password you use for Vector. Then paste:
 
-```bash
-balena whoami
-```
-
-The output includes the URL. If it says `balena-cloud.com`, your server URL is not set (step 1).
-
-For scripts and CI, log in with an API key instead of a password. See [Automate with CI](doc:ci-automation).
-
-## Check the whole setup
-
-```bash
+```powershell
 balena whoami
 balena fleets
 ```
 
-If both work, your computer is ready to deploy. If one fails, see [Troubleshooting](doc:troubleshooting).
+`balena whoami` should show `mydomain.com` as the URL, and `balena fleets` lists your fleets. That is it: you are connected.
+
+## macOS and Linux
+
+1. Install the CLI from <https://github.com/balena-io/balena-cli/releases/latest> (the macOS `.pkg`, or the Linux `.zip` which you unzip and add to your PATH).
+2. Open **Terminal** (macOS: press Cmd+Space, type `Terminal`, Enter).
+3. Paste this to point the CLI at your server for good, then close and reopen Terminal:
+
+```bash
+echo "balenaUrl: 'mydomain.com'" >> ~/.balenarc.yml
+```
+
+4. In the new Terminal, log in and check:
+
+```bash
+balena login
+balena whoami
+balena fleets
+```
+
+Choose **Credentials** and enter your Vector email and password.
+
+## It did not work?
+
+| You see | Do this |
+|---|---|
+| `balena` is not recognized / command not found | The CLI is not installed or the window was opened before the install. Close the window, open a new one, try again. |
+| `whoami` shows `balena-cloud.com` | Step 3 was not applied. Close all PowerShell windows, open a new one and run `balena login` again. |
+| `Invalid credentials` | Use the same email and password you use to sign in to Vector. |
+| Anything about a certificate (`self signed`, `x509`, `unable to verify`) | Your server uses its own certificate. See [Self-signed certificates](doc:connect-cli#self-signed-certificates) below. |
+| Something else | See [Troubleshooting](doc:troubleshooting). |
+
+For scripts and CI, log in with an API key instead of a password. See [Automate with CI](doc:ci-automation).
+
+## Self-signed certificates
+
+A server with a publicly trusted certificate (the default for a domain set up with Let's Encrypt, see [Certificates and DNS](doc:certificates-dns)) needs none of this. A server with its own certificate authority needs your computer to trust it (only if you saw a certificate error).
+
+**1. Get the CA file** from the server. It is at `.balena/ca-mydomain.com.pem` inside the `vector-balena` folder. Copy it to your computer, for example:
+
+```powershell
+scp balena@mydomain.com:~/vector-balena/.balena/ca-mydomain.com.pem $HOME\ca.pem
+```
+
+**2. Tell the CLI to trust it** (Windows, then open a new PowerShell):
+
+```powershell
+setx NODE_EXTRA_CA_CERTS "$HOME\ca.pem"
+```
+
+On macOS and Linux: `export NODE_EXTRA_CA_CERTS=$HOME/ca.pem` (add it to `~/.zshrc` or `~/.bashrc` to keep it).
+
+**3. Tell Docker to trust it**, only needed for `balena deploy`. Otherwise pushing fails with `x509: certificate signed by unknown authority`.
+
+- **Windows:** open PowerShell **as administrator** (Windows key, type `PowerShell`, right-click it, **Run as administrator**), paste the command below, then restart Docker Desktop (right-click its tray icon, **Restart**):
+
+```powershell
+certutil -addstore -f "ROOT" $HOME\ca.pem
+```
+
+- **macOS:** then restart Docker Desktop:
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/ca.pem
+```
+
+- **Linux:**
+
+```bash
+sudo cp ~/ca.pem /usr/local/share/ca-certificates/ca.crt
+sudo update-ca-certificates
+sudo systemctl restart docker
+```
 
 > [!TIP]
 > The registry hostname is `registry2.mydomain.com`, not `registry`. This is a common source of confusion when you test DNS or write firewall rules.
