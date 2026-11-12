@@ -76,8 +76,8 @@ The release hash at the end identifies this version everywhere in Vector.
 In the UI open **Devices** and then the device. The **Services** section shows each container going from *Downloading* to *Running*, with a progress bar. In a terminal:
 
 ```bash
-balena devices
-balena logs <uuid> --tail
+balena device list
+balena device logs <uuid> --tail
 ```
 
 You can also see the new release under **Releases** in the sidebar.

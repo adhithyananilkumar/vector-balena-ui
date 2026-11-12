@@ -52,10 +52,10 @@ Use the arrow keys to choose **Credentials** and press Enter, then type the emai
 
 ```powershell
 balena whoami
-balena fleets
+balena fleet list
 ```
 
-`balena whoami` should show `mydomain.com` as the URL, and `balena fleets` lists your fleets. That is it: you are connected.
+`balena whoami` should show `mydomain.com` as the URL, and `balena fleet list` lists your fleets. That is it: you are connected.
 
 ## macOS and Linux
 
@@ -72,7 +72,7 @@ echo "balenaUrl: 'mydomain.com'" >> ~/.balenarc.yml
 ```bash
 balena login
 balena whoami
-balena fleets
+balena fleet list
 ```
 
 Choose **Credentials** and enter your Vector email and password.

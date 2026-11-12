@@ -43,8 +43,8 @@ Logs update about every **two seconds** while at least one source is selected.
 - The browser keeps at most **5,000** entries. For longer history, use the CLI:
 
 ```bash
-balena logs <uuid> --tail
-balena logs <uuid> --service web --since 1h
+balena device logs <uuid> --tail
+balena device logs <uuid> --service web --since 1h
 ```
 
 Colours: ANSI colours are kept, and JSON logs with a `level` or `severity` field are coloured by severity.
@@ -77,4 +77,4 @@ The **Connect** button opens a terminal and file transfer in your browser. See [
 
 ## Share a link
 
-A device is also reachable at `/devices/<UUID>/summary`, which redirects to its dashboard. This matches the link the `balena devices` command prints.
+A device is also reachable at `/devices/<UUID>/summary`, which redirects to its dashboard. This matches the link the `balena device list` command prints.

@@ -109,7 +109,7 @@ Insert the card, connect the cable if you chose Ethernet, and power on. First bo
 You can also check from a terminal:
 
 ```bash
-balena devices
+balena device list
 ```
 
 ## Devices with internal storage

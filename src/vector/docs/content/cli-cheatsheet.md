@@ -29,7 +29,7 @@ balena deploy --help
 
 | Command | Purpose |
 |---|---|
-| `balena fleets` | List fleets. |
+| `balena fleet list` | List fleets. |
 | `balena fleet create MyFleet --type raspberrypi4-64` | Create a fleet. |
 | `balena fleet MyFleet` | Show one fleet. |
 | `balena fleet rename MyFleet NewName` | Rename. |
@@ -60,8 +60,8 @@ balena deploy --help
 
 | Command | Purpose |
 |---|---|
-| `balena devices` | List all devices. |
-| `balena devices --fleet MyFleet` | List one fleet's devices. |
+| `balena device list` | List all devices. |
+| `balena device list --fleet MyFleet` | List one fleet's devices. |
 | `balena device <uuid>` | Show one device. |
 | `balena device register MyFleet --uuid <uuid>` | Register a device ahead of time. |
 | `balena device rename <uuid> NewName` | Rename. |
@@ -76,22 +76,22 @@ balena deploy --help
 
 | Command | Purpose |
 |---|---|
-| `balena logs <uuid> --tail` | Follow device logs. |
-| `balena logs <uuid> --service web` | Logs of one service. |
-| `balena ssh <uuid>` | Shell on the device (Host OS). |
-| `balena ssh <uuid> web` | Shell inside the `web` container. |
+| `balena device logs <uuid> --tail` | Follow device logs. |
+| `balena device logs <uuid> --service web` | Logs of one service. |
+| `balena device ssh <uuid>` | Shell on the device (Host OS). |
+| `balena device ssh <uuid> web` | Shell inside the `web` container. |
 
 > [!NOTE]
-> `balena ssh` needs an SSH key on your account. The Vector UI terminal needs no key. See [Remote access](doc:remote-access).
+> `balena device ssh` needs an SSH key on your account. The Vector UI terminal needs no key. See [Remote access](doc:remote-access).
 
 ## Variables and tags
 
 | Command | Purpose |
 |---|---|
 | `balena env list --fleet MyFleet` | List fleet variables. |
-| `balena env add NAME value --fleet MyFleet` | Add a fleet variable. |
+| `balena env set NAME value --fleet MyFleet` | Add a fleet variable. |
 | `balena env rm <id>` | Remove a variable. |
-| `balena tags --fleet MyFleet` | List tags. |
+| `balena tag list --fleet MyFleet` | List tags. |
 | `balena tag set key value --device <uuid>` | Set a device tag. |
 
 ## Images and provisioning
@@ -115,7 +115,7 @@ Add `--dev` to `os configure` for a development image. Add `--network wifi --wif
 $env:BALENARC_BALENA_URL = "mydomain.com"
 $env:NODE_EXTRA_CA_CERTS = "C:\certs\ca.pem"
 balena login
-balena fleets
+balena fleet list
 ```
 
 ## Linux and macOS quick setup
@@ -124,7 +124,7 @@ balena fleets
 export BALENARC_BALENA_URL=mydomain.com
 export NODE_EXTRA_CA_CERTS=$HOME/certs/ca.pem
 balena login
-balena fleets
+balena fleet list
 ```
 
 ## Server commands (on the server)

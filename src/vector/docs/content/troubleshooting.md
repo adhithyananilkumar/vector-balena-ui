@@ -122,7 +122,7 @@ Docker is not running.
 
 The name or slug is wrong, or you are logged in to the wrong server.
 
-**Fix:** list fleets with `balena fleets` and copy the exact name or slug (for example `admin/myfleet`).
+**Fix:** list fleets with `balena fleet list` and copy the exact name or slug (for example `admin/myfleet`).
 
 ### `Dockerfile not found` or nothing to build
 

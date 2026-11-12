@@ -76,8 +76,8 @@ The CLI builds on your computer, pushes to your registry and creates a release. 
 ## 9. Check that it worked
 
 ```bash
-balena devices
-balena logs <uuid> --tail
+balena device list
+balena device logs <uuid> --tail
 ```
 
 Or open the device in the UI and watch **Services** and **Logs**.
