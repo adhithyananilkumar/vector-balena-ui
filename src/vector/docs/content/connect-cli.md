@@ -14,8 +14,9 @@ Do this first: until it is installed, `balena` gives "not recognized". Open Powe
 ```powershell
 $r = Invoke-RestMethod https://api.github.com/repos/balena-io/balena-cli/releases/latest
 $a = $r.assets | Where-Object { $_.name -like "*windows-x64-installer.exe" }
-Invoke-WebRequest $a.browser_download_url -OutFile "$env:TEMPalena-cli-installer.exe"
-Start-Process "$env:TEMPalena-cli-installer.exe"
+$installer = Join-Path $env:TEMP "balena-cli-installer.exe"
+Invoke-WebRequest $a.browser_download_url -OutFile $installer
+Start-Process $installer
 ```
 
 Then **close PowerShell and open a new window**, and check it worked:
